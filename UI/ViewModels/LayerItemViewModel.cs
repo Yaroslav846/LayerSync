@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using LayerSync.Core;
 using Autodesk.AutoCAD.ApplicationServices;
+using System.Windows.Input;
 using Color = Autodesk.AutoCAD.Colors.Color; // Added for ShowAlertDialog
 
 namespace LayerSync.UI.ViewModels
@@ -18,11 +19,72 @@ namespace LayerSync.UI.ViewModels
         private Color _acadColor;
         private SolidColorBrush _displayBrush;
         private bool _isUpdatingFromAcad = false; // Flag to prevent recursive updates
+        private bool _isEditing;
+        private string _originalName;
+
+        public bool IsEditing
+        {
+            get => _isEditing;
+            set
+            {
+                if (_isEditing == value) return;
+                _isEditing = value;
+                if (_isEditing)
+                {
+                    _originalName = Name;
+                }
+                OnPropertyChanged();
+                (CommitRenameCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+
+        public ICommand CommitRenameCommand { get; }
+        public ICommand CancelRenameCommand { get; }
+        public ICommand StartEditCommand { get; }
+
+        public LayerItemViewModel()
+        {
+            CommitRenameCommand = new RelayCommand(ExecuteCommitRename, CanExecuteCommitRename);
+            CancelRenameCommand = new RelayCommand(ExecuteCancelRename);
+            StartEditCommand = new RelayCommand(p => IsEditing = true);
+        }
+
+        private bool CanExecuteCommitRename(object obj)
+        {
+            return IsEditing;
+        }
+
+        private void ExecuteCommitRename(object newNameObj)
+        {
+            string newName = newNameObj as string;
+            if (string.IsNullOrWhiteSpace(newName) || newName == _originalName)
+            {
+                IsEditing = false;
+                return;
+            }
+
+            if (AcadService.RenameLayer(_originalName, newName))
+            {
+                Name = newName;
+                IsEditing = false;
+            }
+        }
+
+        private void ExecuteCancelRename(object obj)
+        {
+            Name = _originalName;
+            IsEditing = false;
+        }
 
         public string Name
         {
             get => _name;
-            set { _name = value; OnPropertyChanged(); }
+            set
+            {
+                if (_name == value) return;
+                _name = value;
+                OnPropertyChanged();
+            }
         }
 
         public bool IsOn

@@ -143,6 +143,48 @@ namespace LayerSync.Core
             var db = HostApplicationServices.WorkingDatabase;
             db.ObjectModified -= OnDatabaseObjectModified;
         }
+
+        public static bool RenameLayer(string oldName, string newName)
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return false;
+            var db = doc.Database;
+
+            using (doc.LockDocument())
+            {
+                using (var tr = db.TransactionManager.StartTransaction())
+                {
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+
+                    if (layerTable.Has(oldName) && !layerTable.Has(newName))
+                    {
+                        try
+                        {
+                            var layer = (LayerTableRecord)tr.GetObject(layerTable[oldName], OpenMode.ForWrite);
+                            SymbolUtilityServices.ValidateSymbolName(newName, false);
+                            layer.Name = newName;
+                            tr.Commit();
+                            return true;
+                        }
+                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                        {
+                            Application.ShowAlertDialog($"Error renaming layer: {ex.Message}");
+                            tr.Abort();
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (layerTable.Has(newName))
+                        {
+                            Application.ShowAlertDialog($"Error: A layer with the name '{newName}' already exists.");
+                        }
+                        tr.Abort();
+                        return false;
+                    }
+                }
+            }
+        }
     }
 }
 
