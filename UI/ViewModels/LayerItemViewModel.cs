@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using LayerSync.Core;
 using Autodesk.AutoCAD.ApplicationServices;
+using System.Windows.Input;
 using Color = Autodesk.AutoCAD.Colors.Color; // Added for ShowAlertDialog
 
 namespace LayerSync.UI.ViewModels
@@ -33,7 +34,44 @@ namespace LayerSync.UI.ViewModels
                     _originalName = Name;
                 }
                 OnPropertyChanged();
+                (CommitRenameCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
+        }
+
+        public ICommand CommitRenameCommand { get; }
+        public ICommand CancelRenameCommand { get; }
+
+        public LayerItemViewModel()
+        {
+            CommitRenameCommand = new RelayCommand(ExecuteCommitRename, CanExecuteCommitRename);
+            CancelRenameCommand = new RelayCommand(ExecuteCancelRename);
+        }
+
+        private bool CanExecuteCommitRename(object obj)
+        {
+            return IsEditing;
+        }
+
+        private void ExecuteCommitRename(object newNameObj)
+        {
+            string newName = newNameObj as string;
+            if (string.IsNullOrWhiteSpace(newName) || newName == _originalName)
+            {
+                IsEditing = false;
+                return;
+            }
+
+            if (AcadService.RenameLayer(_originalName, newName))
+            {
+                Name = newName;
+                IsEditing = false;
+            }
+        }
+
+        private void ExecuteCancelRename(object obj)
+        {
+            Name = _originalName;
+            IsEditing = false;
         }
 
         public string Name
@@ -44,10 +82,6 @@ namespace LayerSync.UI.ViewModels
                 if (_name == value) return;
                 _name = value;
                 OnPropertyChanged();
-                if (!_isEditing) return; // Only rename when in edit mode and name changes
-                if (string.IsNullOrWhiteSpace(value) || value == _originalName) return;
-
-                AcadService.RenameLayer(_originalName, value);
             }
         }
 

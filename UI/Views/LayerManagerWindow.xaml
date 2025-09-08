@@ -68,7 +68,11 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" KeyDown="TextBox_KeyDown">
+                                    <TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{Binding CommitRenameCommand}" CommandParameter="{Binding Text, ElementName=renameTextBox}"/>
+                                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}"/>
+                                        </TextBox.InputBindings>
                                         <TextBox.Style>
                                             <Style TargetType="TextBox">
                                                 <Setter Property="Visibility" Value="Collapsed"/>

@@ -22,32 +22,6 @@ namespace LayerSync.UI.Views
             // This ensures that cleanup logic in the ViewModel is executed.
             this.Closed += (s, e) => viewModel.Cleanup();
         }
-
-        private void TextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Enter)
-            {
-                var textBox = sender as System.Windows.Controls.TextBox;
-                var binding = textBox.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty);
-                binding.UpdateSource();
-                var layerItem = textBox.DataContext as LayerItemViewModel;
-                if (layerItem != null)
-                {
-                    layerItem.IsEditing = false;
-                }
-            }
-            else if (e.Key == System.Windows.Input.Key.Escape)
-            {
-                var textBox = sender as System.Windows.Controls.TextBox;
-                var binding = textBox.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty);
-                binding.UpdateTarget();
-                var layerItem = textBox.DataContext as LayerItemViewModel;
-                if (layerItem != null)
-                {
-                    layerItem.IsEditing = false;
-                }
-            }
-        }
     }
 }
 
