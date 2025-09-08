@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 using System.Windows.Forms;
@@ -15,11 +16,25 @@ namespace LayerSync.UI.ViewModels
     {
         private ObservableCollection<LayerItemViewModel> _layers;
         private LayerItemViewModel _selectedLayer;
+        private string _searchText = "";
+        private List<LayerItemViewModel> _allLayers;
+
 
         public ObservableCollection<LayerItemViewModel> Layers
         {
             get => _layers;
             set { _layers = value; OnPropertyChanged(); }
+        }
+
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                _searchText = value;
+                OnPropertyChanged();
+                FilterLayers();
+            }
         }
 
         public LayerItemViewModel SelectedLayer
@@ -41,17 +56,46 @@ namespace LayerSync.UI.ViewModels
         public ICommand SetCurrentCommand { get; }
         public ICommand ChangeColorCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand ToggleEditModeCommand { get; }
 
         public LayerManagerViewModel()
         {
             Layers = new ObservableCollection<LayerItemViewModel>();
+            _allLayers = new List<LayerItemViewModel>();
             SetCurrentCommand = new RelayCommand(ExecuteSetCurrent, CanExecuteSetCurrent);
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
+            ToggleEditModeCommand = new RelayCommand(ExecuteToggleEditMode, CanExecuteToggleEditMode);
 
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
             AcadService.LayerChanged += OnAcadLayerChanged;
+        }
+
+        private bool CanExecuteToggleEditMode(object obj)
+        {
+            return obj is LayerItemViewModel;
+        }
+
+        private void ExecuteToggleEditMode(object obj)
+        {
+            if (obj is LayerItemViewModel layer)
+            {
+                layer.IsEditing = true;
+            }
+        }
+
+        private void FilterLayers()
+        {
+            var filtered = string.IsNullOrWhiteSpace(SearchText)
+                ? _allLayers
+                : _allLayers.Where(l => l.Name.IndexOf(SearchText, System.StringComparison.OrdinalIgnoreCase) >= 0);
+
+            Layers.Clear();
+            foreach (var layer in filtered)
+            {
+                Layers.Add(layer);
+            }
         }
 
         /// <summary>
@@ -59,12 +103,8 @@ namespace LayerSync.UI.ViewModels
         /// </summary>
         private void LoadLayers()
         {
-            var acadLayers = AcadService.GetAllLayers();
-            Layers.Clear();
-            foreach (var layer in acadLayers)
-            {
-                Layers.Add(layer);
-            }
+            _allLayers = AcadService.GetAllLayers();
+            FilterLayers();
         }
 
         private void OnAcadLayerChanged(object sender, string layerName)
@@ -72,11 +112,12 @@ namespace LayerSync.UI.ViewModels
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
                 var updatedLayerData = AcadService.GetAllLayers().FirstOrDefault(l => l.Name.Equals(layerName, System.StringComparison.OrdinalIgnoreCase));
-                var vmToUpdate = Layers.FirstOrDefault(l => l.Name.Equals(layerName, System.StringComparison.OrdinalIgnoreCase));
+                var vmToUpdate = _allLayers.FirstOrDefault(l => l.Name.Equals(layerName, System.StringComparison.OrdinalIgnoreCase));
 
                 if (vmToUpdate != null && updatedLayerData != null)
                 {
                     vmToUpdate.UpdateFrom(updatedLayerData);
+                    FilterLayers();
                 }
                 else
                 {

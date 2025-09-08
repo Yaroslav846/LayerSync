@@ -18,11 +18,37 @@ namespace LayerSync.UI.ViewModels
         private Color _acadColor;
         private SolidColorBrush _displayBrush;
         private bool _isUpdatingFromAcad = false; // Flag to prevent recursive updates
+        private bool _isEditing;
+        private string _originalName;
+
+        public bool IsEditing
+        {
+            get => _isEditing;
+            set
+            {
+                if (_isEditing == value) return;
+                _isEditing = value;
+                if (_isEditing)
+                {
+                    _originalName = Name;
+                }
+                OnPropertyChanged();
+            }
+        }
 
         public string Name
         {
             get => _name;
-            set { _name = value; OnPropertyChanged(); }
+            set
+            {
+                if (_name == value) return;
+                _name = value;
+                OnPropertyChanged();
+                if (!_isEditing) return; // Only rename when in edit mode and name changes
+                if (string.IsNullOrWhiteSpace(value) || value == _originalName) return;
+
+                AcadService.RenameLayer(_originalName, value);
+            }
         }
 
         public bool IsOn
