@@ -188,6 +188,20 @@ namespace LayerSync.UI.ViewModels
                 _isUpdatingFromAcad = false; // Reset the flag
             }
         }
+
+        public void SetIsFrozenFromManager(bool isFrozen)
+        {
+            if (_isFrozen == isFrozen) return;
+            _isFrozen = isFrozen;
+            OnPropertyChanged(nameof(IsFrozen));
+        }
+
+        public void SetIsOnFromManager(bool isOn)
+        {
+            if (_isOn == isOn) return;
+            _isOn = isOn;
+            OnPropertyChanged(nameof(IsOn));
+        }
     }
 }
 

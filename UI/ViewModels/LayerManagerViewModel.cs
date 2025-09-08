@@ -101,26 +101,42 @@ namespace LayerSync.UI.ViewModels
 
         private void ExecuteFreezeSelected(object obj)
         {
-            var layerNames = SelectedItems.Select(i => i.Name);
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = true);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsFrozenFromManager(true);
+            }
         }
 
         private void ExecuteThawSelected(object obj)
         {
-            var layerNames = SelectedItems.Select(i => i.Name);
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = false);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsFrozenFromManager(false);
+            }
         }
 
         private void ExecuteTurnOnSelected(object obj)
         {
-            var layerNames = SelectedItems.Select(i => i.Name);
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = false);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsOnFromManager(true);
+            }
         }
 
         private void ExecuteTurnOffSelected(object obj)
         {
-            var layerNames = SelectedItems.Select(i => i.Name);
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = true);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsOnFromManager(false);
+            }
         }
 
         private void FilterLayers()
