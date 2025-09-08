@@ -24,14 +24,18 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
         <!-- Layer List -->
         <ListView Grid.Row="1"
+                  x:Name="LayersListView"
                   ItemsSource="{Binding Layers}"
                   SelectedItem="{Binding SelectedLayer}"
+                  SelectionMode="Extended"
+                  SelectionChanged="LayersListView_SelectionChanged"
                   AlternationCount="2"
                   BorderThickness="1"
                   BorderBrush="LightGray">
@@ -116,8 +120,16 @@
             </ListView.View>
         </ListView>
 
+        <!-- Group Action Panel -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
+            <Button Content="Turn On" Command="{Binding TurnOnSelectedCommand}" Margin="0,0,5,0"/>
+            <Button Content="Turn Off" Command="{Binding TurnOffSelectedCommand}" Margin="0,0,5,0"/>
+            <Button Content="Thaw" Command="{Binding ThawSelectedCommand}" Margin="10,0,5,0"/>
+            <Button Content="Freeze" Command="{Binding FreezeSelectedCommand}" Margin="0,0,5,0"/>
+        </StackPanel>
+
         <!-- Button Panel -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button Content="Set Current" 
                     Command="{Binding SetCurrentCommand}" 
                     Width="120" Margin="5"/>

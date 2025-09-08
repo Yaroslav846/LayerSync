@@ -22,6 +22,14 @@ namespace LayerSync.UI.Views
             // This ensures that cleanup logic in the ViewModel is executed.
             this.Closed += (s, e) => viewModel.Cleanup();
         }
+
+        private void LayersListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (this.DataContext is LayerManagerViewModel viewModel)
+            {
+                viewModel.UpdateSelection(LayersListView.SelectedItems);
+            }
+        }
     }
 }
 

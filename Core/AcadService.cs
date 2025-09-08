@@ -64,6 +64,30 @@ namespace LayerSync.Core
             }
         }
 
+        public static void BulkUpdateLayerProperties(IEnumerable<string> layerNames, Action<LayerTableRecord> updateAction)
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            var db = doc.Database;
+
+            using (doc.LockDocument())
+            {
+                using (var tr = db.TransactionManager.StartTransaction())
+                {
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+                    foreach (var layerName in layerNames)
+                    {
+                        if (layerTable.Has(layerName))
+                        {
+                            var layer = (LayerTableRecord)tr.GetObject(layerTable[layerName], OpenMode.ForWrite);
+                            updateAction(layer);
+                        }
+                    }
+                    tr.Commit();
+                }
+            }
+        }
+
         public static void SetCurrentLayer(string layerName)
         {
             var doc = Application.DocumentManager.MdiActiveDocument;
