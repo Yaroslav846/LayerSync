@@ -56,7 +56,6 @@ namespace LayerSync.UI.ViewModels
         public ICommand SetCurrentCommand { get; }
         public ICommand ChangeColorCommand { get; }
         public ICommand RefreshCommand { get; }
-        public ICommand ToggleEditModeCommand { get; }
 
         public LayerManagerViewModel()
         {
@@ -65,24 +64,10 @@ namespace LayerSync.UI.ViewModels
             SetCurrentCommand = new RelayCommand(ExecuteSetCurrent, CanExecuteSetCurrent);
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
-            ToggleEditModeCommand = new RelayCommand(ExecuteToggleEditMode, CanExecuteToggleEditMode);
 
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
             AcadService.LayerChanged += OnAcadLayerChanged;
-        }
-
-        private bool CanExecuteToggleEditMode(object obj)
-        {
-            return obj is LayerItemViewModel;
-        }
-
-        private void ExecuteToggleEditMode(object obj)
-        {
-            if (obj is LayerItemViewModel layer)
-            {
-                layer.IsEditing = true;
-            }
         }
 
         private void FilterLayers()

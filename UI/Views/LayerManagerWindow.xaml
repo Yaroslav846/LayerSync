@@ -35,9 +35,6 @@
                   AlternationCount="2"
                   BorderThickness="1"
                   BorderBrush="LightGray">
-            <ListView.InputBindings>
-                <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding ToggleEditModeCommand}" CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ListView}}"/>
-            </ListView.InputBindings>
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Current" Width="60">
@@ -56,6 +53,9 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid>
+                                    <Grid.InputBindings>
+                                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding StartEditCommand}"/>
+                                    </Grid.InputBindings>
                                     <TextBlock Text="{Binding Name}">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">

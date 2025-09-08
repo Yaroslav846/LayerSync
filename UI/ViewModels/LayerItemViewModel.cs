@@ -40,11 +40,13 @@ namespace LayerSync.UI.ViewModels
 
         public ICommand CommitRenameCommand { get; }
         public ICommand CancelRenameCommand { get; }
+        public ICommand StartEditCommand { get; }
 
         public LayerItemViewModel()
         {
             CommitRenameCommand = new RelayCommand(ExecuteCommitRename, CanExecuteCommitRename);
             CancelRenameCommand = new RelayCommand(ExecuteCancelRename);
+            StartEditCommand = new RelayCommand(p => IsEditing = true);
         }
 
         private bool CanExecuteCommitRename(object obj)
