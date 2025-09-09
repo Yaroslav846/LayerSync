@@ -50,12 +50,20 @@ namespace LayerSync.UI.ViewModels
 
                 ((RelayCommand)SetCurrentCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)ChangeColorCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)SelectByColorCommand)?.RaiseCanExecuteChanged();
             }
         }
 
         public ICommand SetCurrentCommand { get; }
         public ICommand ChangeColorCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand FreezeSelectedCommand { get; }
+        public ICommand ThawSelectedCommand { get; }
+        public ICommand TurnOnSelectedCommand { get; }
+        public ICommand TurnOffSelectedCommand { get; }
+        public ICommand SelectByColorCommand { get; }
+
+        public List<LayerItemViewModel> SelectedItems { get; } = new List<LayerItemViewModel>();
 
         public LayerManagerViewModel()
         {
@@ -65,9 +73,86 @@ namespace LayerSync.UI.ViewModels
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
 
+            FreezeSelectedCommand = new RelayCommand(ExecuteFreezeSelected, CanExecuteSelectionAction);
+            ThawSelectedCommand = new RelayCommand(ExecuteThawSelected, CanExecuteSelectionAction);
+            TurnOnSelectedCommand = new RelayCommand(ExecuteTurnOnSelected, CanExecuteSelectionAction);
+            TurnOffSelectedCommand = new RelayCommand(ExecuteTurnOffSelected, CanExecuteSelectionAction);
+            SelectByColorCommand = new RelayCommand(ExecuteSelectByColor, CanExecuteSelectByColor);
+
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
             AcadService.LayerChanged += OnAcadLayerChanged;
+        }
+
+        private bool CanExecuteSelectByColor(object obj)
+        {
+            return SelectedLayer != null;
+        }
+
+        private void ExecuteSelectByColor(object obj)
+        {
+            if (SelectedLayer != null)
+            {
+                AcadService.HighlightEntitiesByColor(SelectedLayer.AcadColor);
+            }
+        }
+
+        public void UpdateSelection(System.Collections.IList selectedItems)
+        {
+            SelectedItems.Clear();
+            foreach (LayerItemViewModel item in selectedItems)
+            {
+                SelectedItems.Add(item);
+            }
+            (FreezeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ThawSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (TurnOnSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (TurnOffSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private bool CanExecuteSelectionAction(object obj)
+        {
+            return SelectedItems.Count > 0;
+        }
+
+        private void ExecuteFreezeSelected(object obj)
+        {
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = true);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsFrozenFromManager(true);
+            }
+        }
+
+        private void ExecuteThawSelected(object obj)
+        {
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = false);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsFrozenFromManager(false);
+            }
+        }
+
+        private void ExecuteTurnOnSelected(object obj)
+        {
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = false);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsOnFromManager(true);
+            }
+        }
+
+        private void ExecuteTurnOffSelected(object obj)
+        {
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = true);
+            foreach (var item in SelectedItems)
+            {
+                item.SetIsOnFromManager(false);
+            }
         }
 
         private void FilterLayers()
