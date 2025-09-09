@@ -147,6 +147,53 @@ namespace LayerSync.Core
             }
         }
 
+        public static void HighlightEntitiesByColor(Color targetColor)
+        {
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            Database db = doc.Database;
+            Editor ed = doc.Editor;
+            var objectIds = new ObjectIdCollection();
+
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForRead);
+                var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+
+                foreach (ObjectId objId in modelSpace)
+                {
+                    var entity = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+                    if (entity == null) continue;
+
+                    Color effectiveColor = entity.Color;
+                    if (effectiveColor.IsByLayer)
+                    {
+                        if (layerTable.Has(entity.Layer))
+                        {
+                            var layer = (LayerTableRecord)tr.GetObject(layerTable[entity.Layer], OpenMode.ForRead);
+                            effectiveColor = layer.Color;
+                        }
+                    }
+
+                    if (effectiveColor.Equals(targetColor))
+                    {
+                        objectIds.Add(objId);
+                    }
+                }
+
+                if (objectIds.Count > 0)
+                {
+                    ed.SetImpliedSelection(objectIds.Cast<ObjectId>().ToArray());
+                }
+                else
+                {
+                    ed.SetImpliedSelection(new ObjectId[0]);
+                }
+
+                tr.Commit();
+            }
+        }
+
 
         private static void OnDatabaseObjectModified(object sender, ObjectEventArgs e)
         {

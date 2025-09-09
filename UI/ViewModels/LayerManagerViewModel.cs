@@ -50,6 +50,7 @@ namespace LayerSync.UI.ViewModels
 
                 ((RelayCommand)SetCurrentCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)ChangeColorCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)SelectByColorCommand)?.RaiseCanExecuteChanged();
             }
         }
 
@@ -60,6 +61,7 @@ namespace LayerSync.UI.ViewModels
         public ICommand ThawSelectedCommand { get; }
         public ICommand TurnOnSelectedCommand { get; }
         public ICommand TurnOffSelectedCommand { get; }
+        public ICommand SelectByColorCommand { get; }
 
         public List<LayerItemViewModel> SelectedItems { get; } = new List<LayerItemViewModel>();
 
@@ -75,10 +77,24 @@ namespace LayerSync.UI.ViewModels
             ThawSelectedCommand = new RelayCommand(ExecuteThawSelected, CanExecuteSelectionAction);
             TurnOnSelectedCommand = new RelayCommand(ExecuteTurnOnSelected, CanExecuteSelectionAction);
             TurnOffSelectedCommand = new RelayCommand(ExecuteTurnOffSelected, CanExecuteSelectionAction);
+            SelectByColorCommand = new RelayCommand(ExecuteSelectByColor, CanExecuteSelectByColor);
 
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
             AcadService.LayerChanged += OnAcadLayerChanged;
+        }
+
+        private bool CanExecuteSelectByColor(object obj)
+        {
+            return SelectedLayer != null;
+        }
+
+        private void ExecuteSelectByColor(object obj)
+        {
+            if (SelectedLayer != null)
+            {
+                AcadService.HighlightEntitiesByColor(SelectedLayer.AcadColor);
+            }
         }
 
         public void UpdateSelection(System.Collections.IList selectedItems)
