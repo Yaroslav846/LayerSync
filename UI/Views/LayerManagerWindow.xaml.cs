@@ -30,6 +30,22 @@ namespace LayerSync.UI.Views
                 viewModel.UpdateSelection(LayersListView.SelectedItems);
             }
         }
+
+        private void FrozenCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext is LayerManagerViewModel viewModel && sender is FrameworkElement fe && fe.DataContext is LayerItemViewModel clickedItem)
+            {
+                viewModel.ToggleFrozenStateForSelection(clickedItem);
+            }
+        }
+
+        private void OnCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext is LayerManagerViewModel viewModel && sender is FrameworkElement fe && fe.DataContext is LayerItemViewModel clickedItem)
+            {
+                viewModel.ToggleOnStateForSelection(clickedItem);
+            }
+        }
     }
 }
 
