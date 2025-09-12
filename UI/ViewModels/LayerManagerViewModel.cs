@@ -97,15 +97,14 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        public void ToggleFrozenStateForSelection(LayerItemViewModel clickedItem)
+        public void SetFrozenStateForSelection(LayerItemViewModel clickedItem, bool newState)
         {
-            if (SelectedItems.Count <= 1)
+            if (SelectedItems.Count <= 1 || !SelectedItems.Contains(clickedItem))
             {
-                clickedItem.IsFrozen = !clickedItem.IsFrozen;
+                clickedItem.IsFrozen = newState;
                 return;
             }
 
-            bool newState = !clickedItem.IsFrozen;
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = newState);
 
@@ -115,15 +114,14 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        public void ToggleOnStateForSelection(LayerItemViewModel clickedItem)
+        public void SetOnStateForSelection(LayerItemViewModel clickedItem, bool newState)
         {
-            if (SelectedItems.Count <= 1)
+            if (SelectedItems.Count <= 1 || !SelectedItems.Contains(clickedItem))
             {
-                clickedItem.IsOn = !clickedItem.IsOn;
+                clickedItem.IsOn = newState;
                 return;
             }
 
-            bool newState = !clickedItem.IsOn;
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = !newState);
 

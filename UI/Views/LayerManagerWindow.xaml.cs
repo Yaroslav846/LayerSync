@@ -33,17 +33,19 @@ namespace LayerSync.UI.Views
 
         private void FrozenCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (this.DataContext is LayerManagerViewModel viewModel && sender is FrameworkElement fe && fe.DataContext is LayerItemViewModel clickedItem)
+            if (sender is System.Windows.Controls.CheckBox checkBox && this.DataContext is LayerManagerViewModel viewModel && checkBox.DataContext is LayerItemViewModel clickedItem)
             {
-                viewModel.ToggleFrozenStateForSelection(clickedItem);
+                bool newState = checkBox.IsChecked ?? false;
+                viewModel.SetFrozenStateForSelection(clickedItem, newState);
             }
         }
 
         private void OnCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (this.DataContext is LayerManagerViewModel viewModel && sender is FrameworkElement fe && fe.DataContext is LayerItemViewModel clickedItem)
+            if (sender is System.Windows.Controls.CheckBox checkBox && this.DataContext is LayerManagerViewModel viewModel && checkBox.DataContext is LayerItemViewModel clickedItem)
             {
-                viewModel.ToggleOnStateForSelection(clickedItem);
+                bool newState = checkBox.IsChecked ?? false;
+                viewModel.SetOnStateForSelection(clickedItem, newState);
             }
         }
     }
