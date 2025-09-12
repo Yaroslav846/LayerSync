@@ -215,6 +215,101 @@ namespace LayerSync.Core
             db.ObjectModified -= OnDatabaseObjectModified;
         }
 
+        public static bool CreateLayer(string layerName)
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return false;
+            var db = doc.Database;
+
+            using (doc.LockDocument())
+            {
+                using (var tr = db.TransactionManager.StartTransaction())
+                {
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForWrite);
+
+                    try
+                    {
+                        SymbolUtilityServices.ValidateSymbolName(layerName, false);
+                        if (layerTable.Has(layerName))
+                        {
+                            Application.ShowAlertDialog($"Layer \"{layerName}\" already exists.");
+                            return false;
+                        }
+
+                        var newLayer = new LayerTableRecord
+                        {
+                            Name = layerName
+                        };
+                        layerTable.Add(newLayer);
+                        tr.AddNewlyCreatedDBObject(newLayer, true);
+                        tr.Commit();
+                        return true;
+                    }
+                    catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                    {
+                        Application.ShowAlertDialog($"Error creating layer: {ex.Message}");
+                        tr.Abort();
+                        return false;
+                    }
+                }
+            }
+        }
+
+        public static void DeleteLayers(IEnumerable<string> layerNames)
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            var db = doc.Database;
+            var ed = doc.Editor;
+
+            using (doc.LockDocument())
+            {
+                using (var tr = db.TransactionManager.StartTransaction())
+                {
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+                    var layersToDelete = new ObjectIdCollection();
+                    string currentLayerName = ((LayerTableRecord)tr.GetObject(db.Clayer, OpenMode.ForRead)).Name;
+
+                    foreach (var layerName in layerNames)
+                    {
+                        if (layerName.Equals("0", StringComparison.OrdinalIgnoreCase) ||
+                            layerName.Equals("Defpoints", StringComparison.OrdinalIgnoreCase) ||
+                            layerName.Equals(currentLayerName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue; // Skip protected layers
+                        }
+
+                        if (layerTable.Has(layerName))
+                        {
+                            var layerId = layerTable[layerName];
+                            // A more robust check would verify if objects are on the layer.
+                            // For simplicity, we'll rely on AutoCAD's native error for now.
+                            layersToDelete.Add(layerId);
+                        }
+                    }
+
+                    if (layersToDelete.Count > 0)
+                    {
+                        try
+                        {
+                            db.Purge(layersToDelete);
+                            foreach (ObjectId id in layersToDelete)
+                            {
+                                var ltr = (LayerTableRecord)tr.GetObject(id, OpenMode.ForWrite);
+                                ltr.Erase();
+                            }
+                        }
+                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                        {
+                            Application.ShowAlertDialog($"One or more layers could not be deleted.\nThey may not be empty or may be referenced.\n\nDetails: {ex.Message}");
+                        }
+                    }
+
+                    tr.Commit();
+                }
+            }
+        }
+
         public static bool RenameLayer(string oldName, string newName)
         {
             var doc = Application.DocumentManager.MdiActiveDocument;

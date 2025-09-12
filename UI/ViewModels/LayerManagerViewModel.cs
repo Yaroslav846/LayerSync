@@ -58,6 +58,24 @@ namespace LayerSync.UI.ViewModels
         public ICommand ChangeColorCommand { get; }
         public ICommand RefreshCommand { get; }
         public ICommand SelectByColorCommand { get; }
+        public ICommand NewLayerCommand { get; }
+        public ICommand CreateLayerCommand { get; }
+        public ICommand CancelNewLayerCommand { get; }
+        public ICommand DeleteLayersCommand { get; }
+
+        private bool _isNewLayerModeActive;
+        public bool IsNewLayerModeActive
+        {
+            get => _isNewLayerModeActive;
+            set { _isNewLayerModeActive = value; OnPropertyChanged(); }
+        }
+
+        private string _newLayerName;
+        public string NewLayerName
+        {
+            get => _newLayerName;
+            set { _newLayerName = value; OnPropertyChanged(); }
+        }
 
         public List<LayerItemViewModel> SelectedItems { get; } = new List<LayerItemViewModel>();
 
@@ -69,6 +87,11 @@ namespace LayerSync.UI.ViewModels
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
             SelectByColorCommand = new RelayCommand(ExecuteSelectByColor, CanExecuteSelectByColor);
+            NewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = true);
+            CreateLayerCommand = new RelayCommand(ExecuteCreateLayer, p => !string.IsNullOrWhiteSpace(NewLayerName));
+            CancelNewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = false);
+            DeleteLayersCommand = new RelayCommand(ExecuteDeleteLayers, p => SelectedItems.Count > 0);
+
 
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
@@ -95,6 +118,24 @@ namespace LayerSync.UI.ViewModels
             {
                 SelectedItems.Add(item);
             }
+            (DeleteLayersCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void ExecuteCreateLayer(object obj)
+        {
+            if (AcadService.CreateLayer(NewLayerName))
+            {
+                NewLayerName = string.Empty;
+                IsNewLayerModeActive = false;
+                LoadLayers();
+            }
+        }
+
+        private void ExecuteDeleteLayers(object obj)
+        {
+            var layerNames = SelectedItems.Select(i => i.Name).ToList();
+            AcadService.DeleteLayers(layerNames);
+            LoadLayers();
         }
 
         public void SetFrozenStateForSelection(LayerItemViewModel clickedItem, bool newState)
