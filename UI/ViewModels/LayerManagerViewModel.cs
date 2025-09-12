@@ -57,10 +57,6 @@ namespace LayerSync.UI.ViewModels
         public ICommand SetCurrentCommand { get; }
         public ICommand ChangeColorCommand { get; }
         public ICommand RefreshCommand { get; }
-        public ICommand FreezeSelectedCommand { get; }
-        public ICommand ThawSelectedCommand { get; }
-        public ICommand TurnOnSelectedCommand { get; }
-        public ICommand TurnOffSelectedCommand { get; }
         public ICommand SelectByColorCommand { get; }
 
         public List<LayerItemViewModel> SelectedItems { get; } = new List<LayerItemViewModel>();
@@ -72,11 +68,6 @@ namespace LayerSync.UI.ViewModels
             SetCurrentCommand = new RelayCommand(ExecuteSetCurrent, CanExecuteSetCurrent);
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
-
-            FreezeSelectedCommand = new RelayCommand(ExecuteFreezeSelected, CanExecuteSelectionAction);
-            ThawSelectedCommand = new RelayCommand(ExecuteThawSelected, CanExecuteSelectionAction);
-            TurnOnSelectedCommand = new RelayCommand(ExecuteTurnOnSelected, CanExecuteSelectionAction);
-            TurnOffSelectedCommand = new RelayCommand(ExecuteTurnOffSelected, CanExecuteSelectionAction);
             SelectByColorCommand = new RelayCommand(ExecuteSelectByColor, CanExecuteSelectByColor);
 
             LoadLayers();
@@ -104,54 +95,39 @@ namespace LayerSync.UI.ViewModels
             {
                 SelectedItems.Add(item);
             }
-            (FreezeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (ThawSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (TurnOnSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (TurnOffSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
-        private bool CanExecuteSelectionAction(object obj)
+        public void SetFrozenStateForSelection(LayerItemViewModel clickedItem, bool newState)
         {
-            return SelectedItems.Count > 0;
-        }
+            if (SelectedItems.Count <= 1 || !SelectedItems.Contains(clickedItem))
+            {
+                clickedItem.IsFrozen = newState;
+                return;
+            }
 
-        private void ExecuteFreezeSelected(object obj)
-        {
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
-            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = true);
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = newState);
+
             foreach (var item in SelectedItems)
             {
-                item.SetIsFrozenFromManager(true);
+                item.SetIsFrozenFromManager(newState);
             }
         }
 
-        private void ExecuteThawSelected(object obj)
+        public void SetOnStateForSelection(LayerItemViewModel clickedItem, bool newState)
         {
-            var layerNames = SelectedItems.Select(i => i.Name).ToList();
-            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = false);
-            foreach (var item in SelectedItems)
+            if (SelectedItems.Count <= 1 || !SelectedItems.Contains(clickedItem))
             {
-                item.SetIsFrozenFromManager(false);
+                clickedItem.IsOn = newState;
+                return;
             }
-        }
 
-        private void ExecuteTurnOnSelected(object obj)
-        {
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
-            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = false);
+            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = !newState);
+
             foreach (var item in SelectedItems)
             {
-                item.SetIsOnFromManager(true);
-            }
-        }
-
-        private void ExecuteTurnOffSelected(object obj)
-        {
-            var layerNames = SelectedItems.Select(i => i.Name).ToList();
-            AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = true);
-            foreach (var item in SelectedItems)
-            {
-                item.SetIsOnFromManager(false);
+                item.SetIsOnFromManager(newState);
             }
         }
 
