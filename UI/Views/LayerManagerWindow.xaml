@@ -11,10 +11,43 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
+            <Setter Property="Padding" Value="5,6"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔍" VerticalAlignment="Center" Margin="8,0,5,0" Foreground="Gray"/>
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </StackPanel>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Padding" Value="5,8"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#D2E4F9"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E8F1FB"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Padding" Value="8,5"/>
             <Setter Property="Margin" Value="4,0"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -22,7 +55,12 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                           Margin="0,0,5,0"
+                                           VerticalAlignment="Center"/>
+                                <ContentPresenter/>
+                            </StackPanel>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -47,7 +85,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" />
+        <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" Style="{StaticResource SearchBoxStyle}"/>
 
         <!-- Layer List -->
         <ListView Grid.Row="1"
@@ -60,6 +98,21 @@
                   BorderThickness="0">
             <ListView.View>
                 <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="GridViewColumnHeader">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="5,8"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="GridViewColumnHeader">
+                                        <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Background="{TemplateBinding Background}">
+                                            <ContentPresenter Margin="{TemplateBinding Padding}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn Header="Current" Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
@@ -141,14 +194,10 @@
 
         <!-- Button Panel -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Set Current" 
-                    Command="{Binding SetCurrentCommand}"/>
-            <Button Content="Change Color" 
-                    Command="{Binding ChangeColorCommand}"/>
-            <Button Content="Select by Color"
-                    Command="{Binding SelectByColorCommand}"/>
-            <Button Content="Refresh" 
-                    Command="{Binding RefreshCommand}"/>
+            <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
+            <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
+            <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
+            <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
         </StackPanel>
     </Grid>
 </Window>
