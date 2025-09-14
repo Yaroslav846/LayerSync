@@ -47,6 +47,19 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="OverflowMode" Value="AsNeeded"/>
         </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#106EBF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="Margin" Value="4,0"/>
@@ -92,12 +105,16 @@
 
         <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" Style="{StaticResource SearchBoxStyle}"/>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10"
-                    Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-            <Button Content="Create" Command="{Binding CreateLayerCommand}" Margin="5,0"/>
-            <Button Content="Cancel" Command="{Binding CancelNewLayerCommand}" Margin="5,0"/>
-        </StackPanel>
+        <Border Grid.Row="1" Margin="0,0,0,10"
+                BorderThickness="1" BorderBrush="LightGray" CornerRadius="4"
+                Background="#F0F0F0"
+                Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200" Style="{StaticResource SearchBoxStyle}"/>
+                <Button Content="Create" Command="{Binding CreateLayerCommand}" Style="{StaticResource PrimaryButton}"/>
+                <Button Content="Cancel" Command="{Binding CancelNewLayerCommand}" Style="{StaticResource SecondaryButton}"/>
+            </StackPanel>
+        </Border>
 
         <!-- Layer List -->
         <ListView Grid.Row="2"
