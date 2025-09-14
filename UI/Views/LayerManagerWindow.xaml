@@ -43,6 +43,10 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style TargetType="ToolBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="OverflowMode" Value="AsNeeded"/>
+        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="Margin" Value="4,0"/>
@@ -201,15 +205,18 @@
         </ListView>
 
         <!-- Button Panel -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="New" Command="{Binding NewLayerCommand}" Tag="+"/>
-            <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
-
-            <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓" Margin="20,0,4,0"/>
-            <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
-            <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
-            <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
-        </StackPanel>
+        <ToolBarTray Grid.Row="3" Background="Transparent">
+            <ToolBar>
+                <Button Content="New" Command="{Binding NewLayerCommand}" Tag="+"/>
+                <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
+                <Separator/>
+                <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
+                <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
+                <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
+                <Separator/>
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
+            </ToolBar>
+        </ToolBarTray>
     </Grid>
 </Window>
 
