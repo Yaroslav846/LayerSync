@@ -43,6 +43,23 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style TargetType="ToolBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="OverflowMode" Value="AsNeeded"/>
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#106EBF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="Margin" Value="4,0"/>
@@ -81,14 +98,26 @@
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" Style="{StaticResource SearchBoxStyle}"/>
 
+        <Border Grid.Row="1" Margin="0,0,0,10"
+                BorderThickness="1" BorderBrush="LightGray" CornerRadius="4"
+                Background="#F0F0F0"
+                Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200" Style="{StaticResource SearchBoxStyle}"/>
+                <Button Content="Create" Command="{Binding CreateLayerCommand}" Style="{StaticResource PrimaryButton}"/>
+                <Button Content="Cancel" Command="{Binding CancelNewLayerCommand}" Style="{StaticResource SecondaryButton}"/>
+            </StackPanel>
+        </Border>
+
         <!-- Layer List -->
-        <ListView Grid.Row="1"
+        <ListView Grid.Row="2"
                   x:Name="LayersListView"
                   ItemsSource="{Binding Layers}"
                   SelectedItem="{Binding SelectedLayer}"
@@ -193,12 +222,18 @@
         </ListView>
 
         <!-- Button Panel -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
-            <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
-            <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
-            <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
-        </StackPanel>
+        <ToolBarTray Grid.Row="3" Background="Transparent">
+            <ToolBar>
+                <Button Content="New" Command="{Binding NewLayerCommand}" Tag="+"/>
+                <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
+                <Separator/>
+                <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
+                <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
+                <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
+                <Separator/>
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
+            </ToolBar>
+        </ToolBarTray>
     </Grid>
 </Window>
 
