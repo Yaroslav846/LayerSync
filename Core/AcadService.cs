@@ -96,11 +96,16 @@ namespace LayerSync.Core
             var db = doc.Database;
             var ed = doc.Editor;
 
-            // Get the current selection
-            var selectionResult = ed.GetSelection();
+            // Prompt the user to select objects
+            var promptOptions = new PromptSelectionOptions
+            {
+                MessageForAdding = "\nSelect objects to move to layer '" + targetLayerName + "': "
+            };
+            var selectionResult = ed.GetSelection(promptOptions);
+
             if (selectionResult.Status != PromptStatus.OK || selectionResult.Value == null)
             {
-                return; // No selection
+                return; // User cancelled or no selection
             }
 
             var selectionSet = selectionResult.Value;
