@@ -62,6 +62,7 @@ namespace LayerSync.UI.ViewModels
         public ICommand CreateLayerCommand { get; }
         public ICommand CancelNewLayerCommand { get; }
         public ICommand DeleteLayersCommand { get; }
+        public ICommand MoveSelectionToLayerCommand { get; }
 
         private bool _isNewLayerModeActive;
         public bool IsNewLayerModeActive
@@ -91,6 +92,7 @@ namespace LayerSync.UI.ViewModels
             CreateLayerCommand = new RelayCommand(ExecuteCreateLayer, p => !string.IsNullOrWhiteSpace(NewLayerName));
             CancelNewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = false);
             DeleteLayersCommand = new RelayCommand(ExecuteDeleteLayers, p => SelectedItems.Count > 0);
+            MoveSelectionToLayerCommand = new RelayCommand(ExecuteMoveSelectionToLayer, CanExecuteMoveSelectionToLayer);
 
 
             LoadLayers();
@@ -109,6 +111,23 @@ namespace LayerSync.UI.ViewModels
             {
                 AcadService.HighlightEntitiesByColor(SelectedLayer.AcadColor);
             }
+        }
+
+        private bool CanExecuteMoveSelectionToLayer(object obj)
+        {
+            return SelectedLayer != null;
+        }
+
+        private void ExecuteMoveSelectionToLayer(object obj)
+        {
+            if (SelectedLayer == null) return;
+
+            AcadService.MoveSelectedObjectsToLayer(SelectedLayer.Name);
+
+            // Since the object counter feature is not part of this atomic change,
+            // there is no need to call LoadLayers() to refresh the counts.
+            // A small alert to the user might be nice to confirm the action.
+            Application.ShowAlertDialog("Selected objects moved to layer: " + SelectedLayer.Name);
         }
 
         public void UpdateSelection(System.Collections.IList selectedItems)
@@ -190,18 +209,7 @@ namespace LayerSync.UI.ViewModels
         /// </summary>
         private void LoadLayers()
         {
-            var layers = AcadService.GetAllLayers();
-            var counts = AcadService.GetObjectCountsForAllLayers();
-
-            foreach (var layer in layers)
-            {
-                if (counts.TryGetValue(layer.Name, out int count))
-                {
-                    layer.ObjectCount = count;
-                }
-            }
-
-            _allLayers = layers;
+            _allLayers = AcadService.GetAllLayers();
             FilterLayers();
         }
 

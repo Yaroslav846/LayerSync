@@ -154,7 +154,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="100">
+                    <GridViewColumn Header="Name" Width="120">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid>
@@ -210,17 +210,10 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Frozen" Width="60">
+                    <GridViewColumn Header="Frozen" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsFrozen}" HorizontalAlignment="Center" Click="FrozenCheckBox_Click"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Count" Width="50">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ObjectCount}" HorizontalAlignment="Center"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -235,6 +228,8 @@
                 <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
                 <Separator/>
                 <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
+                <Button Content="Move Selection" Command="{Binding MoveSelectionToLayerCommand}" Tag="➡️"/>
+                <Separator/>
                 <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
                 <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
                 <Separator/>
