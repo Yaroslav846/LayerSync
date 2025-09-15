@@ -112,7 +112,7 @@ namespace LayerSync.UI.ViewModels
 
         private void ExecuteToggleTheme(object parameter)
         {
-            if (parameter is Window window)
+            if (parameter is System.Windows.Window window)
             {
                 ThemeManager.ToggleTheme(window);
             }
