@@ -170,6 +170,13 @@ namespace LayerSync.UI.ViewModels
             private set { _displayBrush = value; OnPropertyChanged(); }
         }
 
+        private int _objectCount;
+        public int ObjectCount
+        {
+            get => _objectCount;
+            set { _objectCount = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// Updates ViewModel properties based on data from AutoCAD.
         /// </summary>

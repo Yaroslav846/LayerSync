@@ -43,6 +43,108 @@ namespace LayerSync.Core
             return layers.OrderBy(l => l.Name).ToList();
         }
 
+        public static Dictionary<string, int> GetObjectCountsForAllLayers()
+        {
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return counts;
+            var db = doc.Database;
+
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForRead);
+                foreach (ObjectId objId in modelSpace)
+                {
+                    var entity = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+                    if (entity != null)
+                    {
+                        if (counts.ContainsKey(entity.Layer))
+                        {
+                            counts[entity.Layer]++;
+                        }
+                        else
+                        {
+                            counts[entity.Layer] = 1;
+                        }
+                    }
+                }
+                tr.Commit();
+            }
+
+            // Also ensure all layers from the layer table are in the dictionary, even if they have 0 objects.
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+                foreach (ObjectId layerId in layerTable)
+                {
+                    var layer = (LayerTableRecord)tr.GetObject(layerId, OpenMode.ForRead);
+                    if (!counts.ContainsKey(layer.Name))
+                    {
+                        counts.Add(layer.Name, 0);
+                    }
+                }
+                tr.Commit();
+            }
+
+            return counts;
+        }
+
+        public static void MoveSelectedObjectsToLayer(string targetLayerName)
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            var db = doc.Database;
+            var ed = doc.Editor;
+
+            // Get the current selection
+            var selectionResult = ed.GetSelection();
+            if (selectionResult.Status != PromptStatus.OK || selectionResult.Value == null)
+            {
+                return; // No selection
+            }
+
+            var selectionSet = selectionResult.Value;
+            var objectIds = selectionSet.GetObjectIds();
+
+            if (objectIds.Length == 0)
+            {
+                return; // No objects in selection
+            }
+
+            using (doc.LockDocument())
+            {
+                using (var tr = db.TransactionManager.StartTransaction())
+                {
+                    // Verify the target layer exists
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+                    if (!layerTable.Has(targetLayerName))
+                    {
+                        Application.ShowAlertDialog($"Error: Target layer '{targetLayerName}' does not exist.");
+                        tr.Abort();
+                        return;
+                    }
+
+                    foreach (ObjectId objId in objectIds)
+                    {
+                        try
+                        {
+                            var entity = tr.GetObject(objId, OpenMode.ForWrite) as Entity;
+                            if (entity != null)
+                            {
+                                entity.Layer = targetLayerName;
+                            }
+                        }
+                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                        {
+                            // Log or show error for individual object if needed, but continue
+                            ed.WriteMessage($"\nCould not move object {objId}: {ex.Message}");
+                        }
+                    }
+                    tr.Commit();
+                }
+            }
+        }
+
         public static void UpdateLayerProperty(string layerName, Action<LayerTableRecord> updateAction)
         {
             var doc = Application.DocumentManager.MdiActiveDocument;
@@ -348,62 +450,6 @@ namespace LayerSync.Core
                         tr.Abort();
                         return false;
                     }
-                }
-            }
-        }
-
-        public static void MoveSelectedObjectsToLayer(string targetLayerName)
-        {
-            var doc = Application.DocumentManager.MdiActiveDocument;
-            if (doc == null) return;
-            var db = doc.Database;
-            var ed = doc.Editor;
-
-            // Get the current selection
-            var selectionResult = ed.GetSelection();
-            if (selectionResult.Status != PromptStatus.OK || selectionResult.Value == null)
-            {
-                return; // No selection
-            }
-
-            var selectionSet = selectionResult.Value;
-            var objectIds = selectionSet.GetObjectIds();
-
-            if (objectIds.Length == 0)
-            {
-                return; // No objects in selection
-            }
-
-            using (doc.LockDocument())
-            {
-                using (var tr = db.TransactionManager.StartTransaction())
-                {
-                    // Verify the target layer exists
-                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
-                    if (!layerTable.Has(targetLayerName))
-                    {
-                        Application.ShowAlertDialog($"Error: Target layer '{targetLayerName}' does not exist.");
-                        tr.Abort();
-                        return;
-                    }
-
-                    foreach (ObjectId objId in objectIds)
-                    {
-                        try
-                        {
-                            var entity = tr.GetObject(objId, OpenMode.ForWrite) as Entity;
-                            if (entity != null)
-                            {
-                                entity.Layer = targetLayerName;
-                            }
-                        }
-                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
-                        {
-                            // Log or show error for individual object if needed, but continue
-                            ed.WriteMessage($"\nCould not move object {objId}: {ex.Message}");
-                        }
-                    }
-                    tr.Commit();
                 }
             }
         }
