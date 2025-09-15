@@ -1,3 +1,4 @@
+using LayerSync.UI.Core;
 ﻿using LayerSync.UI.ViewModels;
 using System.Windows;
 
@@ -21,6 +22,11 @@ namespace LayerSync.UI.Views
             // NEW: Add an event handler for the window's Closed event.
             // This ensures that cleanup logic in the ViewModel is executed.
             this.Closed += (s, e) => viewModel.Cleanup();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            ThemeManager.ApplyTheme(this);
         }
 
         private void LayersListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
