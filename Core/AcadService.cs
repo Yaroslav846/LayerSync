@@ -43,6 +43,52 @@ namespace LayerSync.Core
             return layers.OrderBy(l => l.Name).ToList();
         }
 
+        public static Dictionary<string, int> GetObjectCountsForAllLayers()
+        {
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return counts;
+            var db = doc.Database;
+
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForRead);
+                foreach (ObjectId objId in modelSpace)
+                {
+                    var entity = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+                    if (entity != null)
+                    {
+                        if (counts.ContainsKey(entity.Layer))
+                        {
+                            counts[entity.Layer]++;
+                        }
+                        else
+                        {
+                            counts[entity.Layer] = 1;
+                        }
+                    }
+                }
+                tr.Commit();
+            }
+
+            // Also ensure all layers from the layer table are in the dictionary, even if they have 0 objects.
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
+                foreach (ObjectId layerId in layerTable)
+                {
+                    var layer = (LayerTableRecord)tr.GetObject(layerId, OpenMode.ForRead);
+                    if (!counts.ContainsKey(layer.Name))
+                    {
+                        counts.Add(layer.Name, 0);
+                    }
+                }
+                tr.Commit();
+            }
+
+            return counts;
+        }
+
         public static void UpdateLayerProperty(string layerName, Action<LayerTableRecord> updateAction)
         {
             var doc = Application.DocumentManager.MdiActiveDocument;

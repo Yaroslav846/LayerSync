@@ -1,4 +1,3 @@
-using LayerSync.UI.Core;
 ﻿using LayerSync.UI.ViewModels;
 using System.Windows;
 
