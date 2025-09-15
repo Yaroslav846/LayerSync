@@ -10,84 +10,12 @@
         MinHeight="400" MinWidth="350">
 
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="5,6"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Grid>
-                            <Border x:Name="border"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="4"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔍" VerticalAlignment="Center" Margin="8,0,5,0" Foreground="Gray"/>
-                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
-                            </StackPanel>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style TargetType="ListViewItem">
-            <Setter Property="Padding" Value="5,8"/>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#D2E4F9"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E8F1FB"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style TargetType="ToolBar">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="OverflowMode" Value="AsNeeded"/>
-        </Style>
-        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#0078D4"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#106EBF"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="Margin" Value="4,0"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}"
-                                           Margin="0,0,5,0"
-                                           VerticalAlignment="Center"/>
-                                <ContentPresenter/>
-                            </StackPanel>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E0E0E0"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/LayerSync;component/UI/Themes/LightTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        </ResourceDictionary>
     </Window.Resources>
 
     <!-- ViewModel is created in code-behind, we only specify the data type here -->
@@ -95,7 +23,7 @@
         <vm:LayerManagerViewModel/>
     </Window.DataContext>
 
-    <Grid Margin="15">
+    <Grid Margin="15" Background="{DynamicResource BackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -106,8 +34,8 @@
         <TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,15" Style="{StaticResource SearchBoxStyle}"/>
 
         <Border Grid.Row="1" Margin="0,0,0,10"
-                BorderThickness="1" BorderBrush="LightGray" CornerRadius="4"
-                Background="#F0F0F0"
+                BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="4"
+                Background="{DynamicResource BackgroundBrush}"
                 Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel Orientation="Horizontal" Margin="10">
                 <TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200" Style="{StaticResource SearchBoxStyle}"/>
@@ -124,7 +52,9 @@
                   SelectionMode="Extended"
                   SelectionChanged="LayersListView_SelectionChanged"
                   AlternationCount="2"
-                  BorderThickness="0">
+                  BorderThickness="0"
+                  Background="{DynamicResource BackgroundBrush}"
+                  Foreground="{DynamicResource ForegroundBrush}">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>
@@ -134,7 +64,7 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="GridViewColumnHeader">
-                                        <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Background="{TemplateBinding Background}">
+                                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Background="{TemplateBinding Background}">
                                             <ContentPresenter Margin="{TemplateBinding Padding}" />
                                         </Border>
                                     </ControlTemplate>
@@ -150,11 +80,11 @@
                                            Visibility="{Binding IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}"
                                            HorizontalAlignment="Center" 
                                            FontWeight="Bold"
-                                           Foreground="Green"/>
+                                           Foreground="{DynamicResource AccentBrush}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="120">
+                    <GridViewColumn Header="Name" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid>
@@ -198,7 +128,7 @@
                             <DataTemplate>
                                 <Rectangle Width="25" Height="15" 
                                            Fill="{Binding DisplayBrush}" 
-                                           Stroke="Gray" 
+                                           Stroke="{DynamicResource BorderBrush}"
                                            StrokeThickness="1"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
@@ -210,10 +140,17 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Frozen" Width="80">
+                    <GridViewColumn Header="Frozen" Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsFrozen}" HorizontalAlignment="Center" Click="FrozenCheckBox_Click"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Count" Width="50">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ObjectCount}" HorizontalAlignment="Center"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -228,10 +165,14 @@
                 <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
                 <Separator/>
                 <Button Content="Set Current" Command="{Binding SetCurrentCommand}" Tag="✓"/>
+                <Button Content="Move Selection" Command="{Binding MoveSelectionToLayerCommand}" Tag="➡️"/>
+                <Separator/>
                 <Button Content="Change Color" Command="{Binding ChangeColorCommand}" Tag="🎨"/>
                 <Button Content="Select by Color" Command="{Binding SelectByColorCommand}" Tag="🖌️"/>
                 <Separator/>
                 <Button Content="Refresh" Command="{Binding RefreshCommand}" Tag="🔄"/>
+                <Separator/>
+                <Button Content="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" Tag="🌗"/>
             </ToolBar>
         </ToolBarTray>
     </Grid>

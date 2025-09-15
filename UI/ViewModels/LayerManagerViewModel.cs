@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Forms;
 using LayerSync.Core;
+using LayerSync.UI.Core;
 using Autodesk.AutoCAD.Windows;
+using AcadApp = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
 
 namespace LayerSync.UI.ViewModels
@@ -62,6 +65,8 @@ namespace LayerSync.UI.ViewModels
         public ICommand CreateLayerCommand { get; }
         public ICommand CancelNewLayerCommand { get; }
         public ICommand DeleteLayersCommand { get; }
+        public ICommand ToggleThemeCommand { get; }
+        public ICommand MoveSelectionToLayerCommand { get; }
 
         private bool _isNewLayerModeActive;
         public bool IsNewLayerModeActive
@@ -91,6 +96,8 @@ namespace LayerSync.UI.ViewModels
             CreateLayerCommand = new RelayCommand(ExecuteCreateLayer, p => !string.IsNullOrWhiteSpace(NewLayerName));
             CancelNewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = false);
             DeleteLayersCommand = new RelayCommand(ExecuteDeleteLayers, p => SelectedItems.Count > 0);
+            ToggleThemeCommand = new RelayCommand(ExecuteToggleTheme);
+            MoveSelectionToLayerCommand = new RelayCommand(ExecuteMoveSelectionToLayer, CanExecuteMoveSelectionToLayer);
 
 
             LoadLayers();
@@ -103,12 +110,35 @@ namespace LayerSync.UI.ViewModels
             return SelectedLayer != null;
         }
 
+        private void ExecuteToggleTheme(object parameter)
+        {
+            if (parameter is System.Windows.Window window)
+            {
+                ThemeManager.ToggleTheme(window);
+            }
+        }
+
         private void ExecuteSelectByColor(object obj)
         {
             if (SelectedLayer != null)
             {
                 AcadService.HighlightEntitiesByColor(SelectedLayer.AcadColor);
             }
+        }
+
+        private bool CanExecuteMoveSelectionToLayer(object obj)
+        {
+            return SelectedLayer != null;
+        }
+
+        private void ExecuteMoveSelectionToLayer(object obj)
+        {
+            if (SelectedLayer == null) return;
+
+            AcadService.MoveSelectedObjectsToLayer(SelectedLayer.Name);
+
+            // Refresh the layer list to update the object counts
+            LoadLayers();
         }
 
         public void UpdateSelection(System.Collections.IList selectedItems)
@@ -190,7 +220,18 @@ namespace LayerSync.UI.ViewModels
         /// </summary>
         private void LoadLayers()
         {
-            _allLayers = AcadService.GetAllLayers();
+            var layers = AcadService.GetAllLayers();
+            var counts = AcadService.GetObjectCountsForAllLayers();
+
+            foreach (var layer in layers)
+            {
+                if (counts.TryGetValue(layer.Name, out int count))
+                {
+                    layer.ObjectCount = count;
+                }
+            }
+
+            _allLayers = layers;
             FilterLayers();
         }
 
