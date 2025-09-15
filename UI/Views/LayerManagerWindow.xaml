@@ -7,13 +7,12 @@
         mc:Ignorable="d"
         Title="Layer Synchronizer" Height="600" Width="450"
         WindowStartupLocation="CenterScreen"
-        MinHeight="400" MinWidth="350"
-        Loaded="Window_Loaded">
+        MinHeight="400" MinWidth="350">
 
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Themes will be merged here -->
+                <ResourceDictionary Source="/LayerSync;component/UI/Themes/LightTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         </ResourceDictionary>

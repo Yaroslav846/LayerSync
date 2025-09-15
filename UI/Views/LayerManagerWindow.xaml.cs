@@ -24,11 +24,6 @@ namespace LayerSync.UI.Views
             this.Closed += (s, e) => viewModel.Cleanup();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            ThemeManager.ApplyTheme(this);
-        }
-
         private void LayersListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (this.DataContext is LayerManagerViewModel viewModel)
