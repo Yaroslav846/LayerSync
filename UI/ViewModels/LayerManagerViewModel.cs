@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Forms;
 using LayerSync.Core;
 using Autodesk.AutoCAD.Windows;
+using AcadApp = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
 
 namespace LayerSync.UI.ViewModels
@@ -127,7 +128,7 @@ namespace LayerSync.UI.ViewModels
             // Since the object counter feature is not part of this atomic change,
             // there is no need to call LoadLayers() to refresh the counts.
             // A small alert to the user might be nice to confirm the action.
-            Application.ShowAlertDialog("Selected objects moved to layer: " + SelectedLayer.Name);
+            AcadApp.ShowAlertDialog("Selected objects moved to layer: " + SelectedLayer.Name);
         }
 
         public void UpdateSelection(System.Collections.IList selectedItems)
