@@ -80,7 +80,7 @@
                                            Visibility="{Binding IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}"
                                            HorizontalAlignment="Center" 
                                            FontWeight="Bold"
-                                           Foreground="Green"/>
+                                           Foreground="{DynamicResource AccentBrush}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -128,7 +128,7 @@
                             <DataTemplate>
                                 <Rectangle Width="25" Height="15" 
                                            Fill="{Binding DisplayBrush}" 
-                                           Stroke="Gray" 
+                                           Stroke="{DynamicResource BorderBrush}"
                                            StrokeThickness="1"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
