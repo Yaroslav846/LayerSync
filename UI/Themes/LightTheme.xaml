@@ -10,8 +10,6 @@
     <SolidColorBrush x:Key="HoverBrush" Color="#E0E0E0"/>
     <SolidColorBrush x:Key="SelectedBrush" Color="#D2E4F9"/>
 
-    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-
     <Style x:Key="SearchBoxStyle" TargetType="TextBox">
         <Setter Property="Padding" Value="5,6"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
