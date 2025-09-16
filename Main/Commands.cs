@@ -39,8 +39,8 @@ namespace LayerSync.Main
             // from a secure source like a config file or environment variable.
             // IronOcr.Installation.LicenseKey = "YOUR_LICENSE_KEY";
 
-            // Install language packs for English and Russian. This requires an internet connection on first run.
-            IronOcr.Installation.Default.InstallOcrLanguages(OcrLanguage.English, OcrLanguage.Russian);
+            // Modern IronOcr versions handle language pack installation automatically.
+            // Ensure you have the necessary models available in your environment.
 
             TypedValue[] filterList = new TypedValue[]
             {
@@ -61,7 +61,6 @@ namespace LayerSync.Main
             SelectionSet selSet = selRes.Value;
             if (selSet == null || selSet.Count == 0) { ed.WriteMessage("\nNo entities selected."); return; }
 
-            // Create a single OCR instance for efficiency
             var ocr = new IronTesseract();
             ocr.Language = OcrLanguage.Russian;
             ocr.AddSecondaryLanguage(OcrLanguage.English);
@@ -116,12 +115,10 @@ namespace LayerSync.Main
                 clusterExtents.AddExtents(ent.GeometricExtents);
             }
 
-            // Define a temporary file for the plot output with a .png extension
             string tempPngFile = Path.ChangeExtension(Path.GetTempFileName(), ".png");
 
             try
             {
-                using (var plotManager = new PlotManager())
                 using (var layout = (Layout)doc.Database.CurrentSpaceId.GetObject(OpenMode.ForRead))
                 {
                     var plotInfo = new PlotInfo();
@@ -131,17 +128,13 @@ namespace LayerSync.Main
                     plotSettings.CopyFrom(layout);
 
                     var psv = PlotSettingsValidator.Current;
-                    psv.SetPlotType(plotSettings, PlotType.Window);
+                    // Fully qualify PlotType to resolve ambiguity
+                    psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                     psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
-
-                    // Use a more standard, commonly available raster plot device
                     psv.SetPlotConfigurationName(plotSettings, "PublishToWeb PNG.pc3", "PNG");
-
                     psv.SetPlotCentered(plotSettings, true);
                     psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
                     psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
-
-                    // Use a monochrome style for high contrast. This is a standard AutoCAD file.
                     psv.SetCurrentStyleSheet(plotSettings, "monochrome.ctb");
 
                     plotInfo.OverrideSettings = plotSettings;
@@ -150,6 +143,7 @@ namespace LayerSync.Main
 
                     if (PlotFactory.ProcessPlotState == ProcessPlotState.NotPlotting)
                     {
+                        // Use the PlotFactory to create the engine, do not use 'new PlotManager()'
                         using (var plotEngine = PlotFactory.CreatePublishEngine())
                         {
                             plotEngine.BeginPlot(null, null);
@@ -187,6 +181,12 @@ namespace LayerSync.Main
             return "";
         }
 
+        private bool ExtentsOverlap(Extents3d ext1, Extents3d ext2)
+        {
+            return ext1.MinPoint.X <= ext2.MaxPoint.X && ext1.MaxPoint.X >= ext2.MinPoint.X &&
+                   ext1.MinPoint.Y <= ext2.MaxPoint.Y && ext1.MaxPoint.Y >= ext2.MinPoint.Y;
+        }
+
         private List<List<Entity>> ClusterEntities(List<Entity> entities)
         {
             var clusters = new List<List<Entity>>();
@@ -215,7 +215,9 @@ namespace LayerSync.Main
                         var expandedClusterExtents = new Extents3d(
                             new Point3d(clusterExtents.MinPoint.X - tolerance, clusterExtents.MinPoint.Y - tolerance, 0),
                             new Point3d(clusterExtents.MaxPoint.X + tolerance, clusterExtents.MaxPoint.Y + tolerance, 0));
-                        if (expandedClusterExtents.IsInterfering(testExtents))
+
+                        // Replace non-existent 'IsInterfering' with correct overlap check
+                        if (ExtentsOverlap(expandedClusterExtents, testExtents))
                         {
                             currentCluster.Add(entity);
                             clusterExtents.AddExtents(testExtents);
