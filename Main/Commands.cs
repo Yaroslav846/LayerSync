@@ -87,7 +87,7 @@ namespace LayerSync.Main
                     int clusterNum = 1;
                     foreach (var cluster in clusters)
                     {
-                        ed.WriteMessage($"\nProcessing cluster {clusterNum++} of {clusters.Count}...");
+                        ed.WriteMessage($"\n--- Processing cluster {clusterNum++} of {clusters.Count} ---");
                         string text = RecognizeTextFromCluster(cluster, doc, ocr);
                         if (!string.IsNullOrWhiteSpace(text))
                         {
@@ -112,60 +112,79 @@ namespace LayerSync.Main
 
         private string RecognizeTextFromCluster(List<Entity> cluster, Document doc, IronTesseract ocr)
         {
+            Editor ed = AcadApplication.DocumentManager.MdiActiveDocument.Editor;
             if (cluster == null || !cluster.Any()) return "";
 
             var clusterExtents = new Extents3d();
             foreach (var ent in cluster)
             {
-                try
-                {
-                    clusterExtents.AddExtents(ent.GeometricExtents);
-                }
+                try { clusterExtents.AddExtents(ent.GeometricExtents); }
                 catch { /* Ignore entities that might not have valid extents */ }
             }
 
-            // Add a check for valid, non-zero area extents to prevent eInvalidInput error.
-            // A small tolerance is used to avoid issues with floating point precision.
+            ed.WriteMessage($"\nCluster bounding box: Min({clusterExtents.MinPoint.X:F2},{clusterExtents.MinPoint.Y:F2}) Max({clusterExtents.MaxPoint.X:F2},{clusterExtents.MaxPoint.Y:F2})");
             if (clusterExtents.MinPoint.X + 1e-6 > clusterExtents.MaxPoint.X ||
                 clusterExtents.MinPoint.Y + 1e-6 > clusterExtents.MaxPoint.Y)
             {
-                AcadApplication.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nSkipping cluster with invalid or zero-area bounding box.");
+                ed.WriteMessage("\nSkipping cluster with invalid or zero-area bounding box.");
                 return "";
             }
 
             string tempPngFile = Path.ChangeExtension(Path.GetTempFileName(), ".png");
+            ed.WriteMessage($"\nTemporary plot file: {tempPngFile}");
 
             try
             {
-                // Correctly get the current layout using the LayoutManager
                 LayoutManager lm = LayoutManager.Current;
+                ed.WriteMessage("\nGot LayoutManager.");
                 ObjectId layoutId = lm.GetLayoutId(lm.CurrentLayout);
+                ed.WriteMessage($"\nGot current layout ID: {lm.CurrentLayout}.");
+
                 using (var layout = (Layout)layoutId.GetObject(OpenMode.ForRead))
                 {
+                    ed.WriteMessage("\nOpened layout object.");
                     var plotInfo = new PlotInfo();
                     plotInfo.Layout = layout.Id;
+                    ed.WriteMessage("\nCreated PlotInfo.");
 
                     var plotSettings = new PlotSettings(layout.ModelType);
                     plotSettings.CopyFrom(layout);
+                    ed.WriteMessage("\nCreated PlotSettings and copied from layout.");
 
                     var psv = PlotSettingsValidator.Current;
-                    psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
-                    psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
+                    ed.WriteMessage("\nGot PlotSettingsValidator.");
 
-                    // Reverting to "DWG To PNG.pc3" as it seemed to work on the user's machine before.
+                    psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
+                    ed.WriteMessage("\nSet PlotType to Window.");
+
+                    psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
+                    ed.WriteMessage("\nSet PlotWindowArea.");
+
                     psv.SetPlotConfigurationName(plotSettings, "DWG To PNG.pc3", "PNG");
+                    ed.WriteMessage("\nSet PlotConfigurationName to 'DWG To PNG.pc3'.");
 
                     psv.SetPlotCentered(plotSettings, true);
+                    ed.WriteMessage("\nSet PlotCentered.");
+
                     psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
+                    ed.WriteMessage("\nSet PlotRotation.");
+
                     psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
+                    ed.WriteMessage("\nSet StdScaleType to ScaleToFit.");
+
                     psv.SetCurrentStyleSheet(plotSettings, "monochrome.ctb");
+                    ed.WriteMessage("\nSet CurrentStyleSheet to 'monochrome.ctb'.");
 
                     plotInfo.OverrideSettings = plotSettings;
+                    ed.WriteMessage("\nOverrode plot settings.");
+
                     var plotInfoValidator = new PlotInfoValidator();
                     plotInfoValidator.Validate(plotInfo);
+                    ed.WriteMessage("\nPlotInfo validation successful.");
 
                     if (PlotFactory.ProcessPlotState == ProcessPlotState.NotPlotting)
                     {
+                        ed.WriteMessage("\nPlot engine is not busy. Starting plot...");
                         using (var plotEngine = PlotFactory.CreatePublishEngine())
                         {
                             plotEngine.BeginPlot(null, null);
@@ -177,22 +196,26 @@ namespace LayerSync.Main
                             plotEngine.EndDocument(null);
                             plotEngine.EndPlot(null);
                         }
+                        ed.WriteMessage("\nPlotting complete.");
                     }
                 }
 
                 if (File.Exists(tempPngFile))
                 {
+                    ed.WriteMessage("\nImage file created. Starting OCR...");
                     using (var ocrInput = new OcrInput(tempPngFile))
                     {
                         var result = ocr.Read(ocrInput);
+                        ed.WriteMessage($"\nOCR finished. Result: '{result.Text.Trim()}'");
                         return result.Text;
                     }
                 }
             }
             catch (System.Exception ex)
             {
-                // Use the alias to specify the AutoCAD Application
-                AcadApplication.DocumentManager.MdiActiveDocument.Editor.WriteMessage($"\nError during OCR plotting: {ex.Message}");
+                ed.WriteMessage($"\n--- DETAILED ERROR ---");
+                ed.WriteMessage($"\nError during OCR plotting: {ex.ToString()}");
+                ed.WriteMessage($"\n--- END DETAILED ERROR ---");
             }
             finally
             {
