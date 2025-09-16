@@ -13,6 +13,9 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
+// To avoid ambiguity with System.Windows.Application, we can use an alias.
+using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Application;
+
 namespace LayerSync.Main
 {
     public class Commands
@@ -25,13 +28,15 @@ namespace LayerSync.Main
             if (_layerWindow != null) { _layerWindow.Activate(); return; }
             _layerWindow = new LayerManagerWindow();
             _layerWindow.Closed += (s, e) => _layerWindow = null;
-            Application.ShowModelessWindow(_layerWindow);
+            // Use the alias to specify the AutoCAD Application
+            AcadApplication.ShowModelessWindow(_layerWindow);
         }
 
         [CommandMethod("RECOGNIZETEXT")]
         public void RecognizeText()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
+            // Use the alias to specify the AutoCAD Application
+            Document doc = AcadApplication.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
 
@@ -128,7 +133,6 @@ namespace LayerSync.Main
                     plotSettings.CopyFrom(layout);
 
                     var psv = PlotSettingsValidator.Current;
-                    // Fully qualify PlotType to resolve ambiguity
                     psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                     psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
                     psv.SetPlotConfigurationName(plotSettings, "PublishToWeb PNG.pc3", "PNG");
@@ -143,7 +147,6 @@ namespace LayerSync.Main
 
                     if (PlotFactory.ProcessPlotState == ProcessPlotState.NotPlotting)
                     {
-                        // Use the PlotFactory to create the engine, do not use 'new PlotManager()'
                         using (var plotEngine = PlotFactory.CreatePublishEngine())
                         {
                             plotEngine.BeginPlot(null, null);
@@ -169,7 +172,8 @@ namespace LayerSync.Main
             }
             catch (System.Exception ex)
             {
-                Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage($"\nError during OCR plotting: {ex.Message}");
+                // Use the alias to specify the AutoCAD Application
+                AcadApplication.DocumentManager.MdiActiveDocument.Editor.WriteMessage($"\nError during OCR plotting: {ex.Message}");
             }
             finally
             {
@@ -191,43 +195,59 @@ namespace LayerSync.Main
         {
             var clusters = new List<List<Entity>>();
             if (!entities.Any()) return clusters;
+
             var entityExtents = entities.ToDictionary(e => e, e => e.GeometricExtents);
+
+            if (!entities.Any()) return clusters;
             double totalHeight = entityExtents.Values.Sum(ext => ext.MaxPoint.Y - ext.MinPoint.Y);
             double averageHeight = totalHeight / entities.Count;
             double tolerance = averageHeight * 1.5;
+
             var remainingEntities = new List<Entity>(entities);
+
             while (remainingEntities.Any())
             {
                 var currentCluster = new List<Entity>();
                 var clusterExtents = new Extents3d();
-                var seed = remainingEntities.First();
-                remainingEntities.Remove(seed);
+
+                var seed = remainingEntities[0];
+                remainingEntities.RemoveAt(0);
                 currentCluster.Add(seed);
                 clusterExtents.AddExtents(entityExtents[seed]);
-                bool addedToCluster;
+
+                int lastCount;
                 do
                 {
-                    addedToCluster = false;
-                    var entitiesToSearch = new List<Entity>(remainingEntities);
-                    foreach (var entity in entitiesToSearch)
+                    lastCount = remainingEntities.Count;
+                    var foundInThisPass = new List<Entity>();
+
+                    foreach (var entity in remainingEntities)
                     {
                         var testExtents = entityExtents[entity];
                         var expandedClusterExtents = new Extents3d(
                             new Point3d(clusterExtents.MinPoint.X - tolerance, clusterExtents.MinPoint.Y - tolerance, 0),
                             new Point3d(clusterExtents.MaxPoint.X + tolerance, clusterExtents.MaxPoint.Y + tolerance, 0));
 
-                        // Replace non-existent 'IsInterfering' with correct overlap check
                         if (ExtentsOverlap(expandedClusterExtents, testExtents))
                         {
-                            currentCluster.Add(entity);
-                            clusterExtents.AddExtents(testExtents);
-                            remainingEntities.Remove(entity);
-                            addedToCluster = true;
+                            foundInThisPass.Add(entity);
                         }
                     }
-                } while (addedToCluster);
+
+                    if (foundInThisPass.Any())
+                    {
+                        foreach (var foundEntity in foundInThisPass)
+                        {
+                            currentCluster.Add(foundEntity);
+                            clusterExtents.AddExtents(entityExtents[foundEntity]);
+                            remainingEntities.Remove(foundEntity);
+                        }
+                    }
+                } while (remainingEntities.Count < lastCount);
+
                 clusters.Add(currentCluster);
             }
+
             return clusters;
         }
     }
