@@ -124,7 +124,10 @@ namespace LayerSync.Main
 
             try
             {
-                using (var layout = (Layout)doc.Database.CurrentSpaceId.GetObject(OpenMode.ForRead))
+                // Correctly get the current layout using the LayoutManager
+                LayoutManager lm = LayoutManager.Current;
+                ObjectId layoutId = lm.GetLayoutId(lm.CurrentLayout);
+                using (var layout = (Layout)layoutId.GetObject(OpenMode.ForRead))
                 {
                     var plotInfo = new PlotInfo();
                     plotInfo.Layout = layout.Id;
