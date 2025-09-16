@@ -117,7 +117,20 @@ namespace LayerSync.Main
             var clusterExtents = new Extents3d();
             foreach (var ent in cluster)
             {
-                clusterExtents.AddExtents(ent.GeometricExtents);
+                try
+                {
+                    clusterExtents.AddExtents(ent.GeometricExtents);
+                }
+                catch { /* Ignore entities that might not have valid extents */ }
+            }
+
+            // Add a check for valid, non-zero area extents to prevent eInvalidInput error.
+            // A small tolerance is used to avoid issues with floating point precision.
+            if (clusterExtents.MinPoint.X + 1e-6 > clusterExtents.MaxPoint.X ||
+                clusterExtents.MinPoint.Y + 1e-6 > clusterExtents.MaxPoint.Y)
+            {
+                AcadApplication.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nSkipping cluster with invalid or zero-area bounding box.");
+                return "";
             }
 
             string tempPngFile = Path.ChangeExtension(Path.GetTempFileName(), ".png");
@@ -138,7 +151,10 @@ namespace LayerSync.Main
                     var psv = PlotSettingsValidator.Current;
                     psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                     psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
-                    psv.SetPlotConfigurationName(plotSettings, "PublishToWeb PNG.pc3", "PNG");
+
+                    // Reverting to "DWG To PNG.pc3" as it seemed to work on the user's machine before.
+                    psv.SetPlotConfigurationName(plotSettings, "DWG To PNG.pc3", "PNG");
+
                     psv.SetPlotCentered(plotSettings, true);
                     psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
                     psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
