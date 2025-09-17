@@ -270,7 +270,7 @@ namespace LayerSync.Core
                 transform.Translate(-(float)(extents.MinPoint.X - padding), -(float)(extents.MinPoint.Y - padding));
                 gfx.Transform = transform;
 
-                using (var pen = new Pen(Color.Black, Math.Max(1, imageSize / 50f)))
+                using (var pen = new Pen(Color.Black, Math.Max(2, imageSize / 20f)))
                 {
                     foreach (var entity in cluster)
                     {
