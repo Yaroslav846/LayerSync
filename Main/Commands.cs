@@ -205,8 +205,17 @@ namespace LayerSync.Main
             string tempPngFile = Path.ChangeExtension(Path.GetTempFileName(), ".png");
             ed.WriteMessage($"\nAttempting to plot cluster to temporary file: {tempPngFile}");
 
-            // JULES: Check for required plot configurations before attempting to plot.
-            var psv = PlotSettingsValidator.Current;
+            LayoutManager lm = LayoutManager.Current;
+            string originalLayout = lm.CurrentLayout;
+            ed.WriteMessage($"\nOriginal layout is '{originalLayout}'. Switching to 'Model' for plotting.");
+
+            try
+            {
+                // JULES: Force switch to Model layout to ensure a clean plotting context.
+                lm.CurrentLayout = "Model";
+
+                // JULES: Check for required plot configurations before attempting to plot.
+                var psv = PlotSettingsValidator.Current;
 
             const string requiredPlotter = "DWG To PNG.pc3";
             if (!psv.GetPlotDeviceList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
@@ -234,7 +243,9 @@ namespace LayerSync.Main
             using (var plotSettings = new PlotSettings(layout.ModelType))
             {
                 plotInfo.Layout = layout.Id;
-                plotSettings.CopyFrom(layout);
+                // JULES: Removing CopyFrom(layout) as it's suspected of carrying over
+                // conflicting settings that cause eInvalidInput errors.
+                // plotSettings.CopyFrom(layout);
 
                 // JULES: Reordered these calls to prevent eInvalidInput error.
                 // The device must be set before properties that depend on it.
