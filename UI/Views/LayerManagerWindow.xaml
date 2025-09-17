@@ -18,11 +18,9 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <!-- ViewModel is created in code-behind, we only specify the data type here -->
-    <Window.DataContext>
-        <vm:LayerManagerViewModel/>
-    </Window.DataContext>
-
+    <!-- The ViewModel is created and set in the code-behind (LayerManagerWindow.xaml.cs).
+         This avoids instantiating the ViewModel in XAML, which can cause issues in the
+         Visual Studio designer, as the ViewModel may depend on a running AutoCAD instance. -->
     <Grid Margin="15" Background="{DynamicResource BackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
