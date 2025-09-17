@@ -173,7 +173,7 @@ namespace LayerSync.Core
                 return recognizedLines;
             }
 
-            using (var engine = new TesseractEngine(tessdataPath, "eng", EngineMode.Default))
+            using (var engine = new TesseractEngine(tessdataPath, "rus", EngineMode.Default))
             {
                 engine.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,-+/\\°:;()[]{}<>_");
 
