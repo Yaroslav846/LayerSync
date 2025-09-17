@@ -1,4 +1,5 @@
-﻿using Autodesk.AutoCAD.ApplicationServices;
+﻿using System;
+using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
@@ -208,7 +209,7 @@ namespace LayerSync.Main
             var psv = PlotSettingsValidator.Current;
 
             const string requiredPlotter = "DWG To PNG.pc3";
-            if (!psv.GetPlotConfigurationList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
+            if (!psv.GetPlotDeviceList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
             {
                 string msg = $"Required plotter configuration '{requiredPlotter}' was not found. Please configure it in AutoCAD's plot manager.";
                 MessageBox.Show(msg, "Plotter Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
