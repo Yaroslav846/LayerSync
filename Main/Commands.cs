@@ -238,7 +238,9 @@ namespace LayerSync.Main
 
                 // JULES: Reordered these calls to prevent eInvalidInput error.
                 // The device must be set before properties that depend on it.
-                psv.SetPlotConfigurationName(plotSettings, requiredPlotter, "PNG");
+                // JULES: Passing null for mediaName to let AutoCAD use the device default,
+                // as "PNG" was causing an eInvalidInput error.
+                psv.SetPlotConfigurationName(plotSettings, requiredPlotter, null);
                 psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                 psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
                 psv.SetPlotCentered(plotSettings, true);
