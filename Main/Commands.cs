@@ -236,9 +236,11 @@ namespace LayerSync.Main
                 plotInfo.Layout = layout.Id;
                 plotSettings.CopyFrom(layout);
 
+                // JULES: Reordered these calls to prevent eInvalidInput error.
+                // The device must be set before properties that depend on it.
+                psv.SetPlotConfigurationName(plotSettings, requiredPlotter, "PNG");
                 psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                 psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
-                psv.SetPlotConfigurationName(plotSettings, requiredPlotter, "PNG");
                 psv.SetPlotCentered(plotSettings, true);
                 psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
                 psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
