@@ -69,6 +69,8 @@ namespace LayerSync.Main
                 using (var tr = db.TransactionManager.StartTransaction())
                 {
                     var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForWrite);
+                    var styleTable = (TextStyleTable)tr.GetObject(db.TextStyleTableId, OpenMode.ForRead);
+                    var standardStyleId = styleTable["Standard"];
 
                     foreach (var line in recognizedLines)
                     {
@@ -76,7 +78,8 @@ namespace LayerSync.Main
                         {
                             Position = line.Position,
                             Height = line.Height,
-                            TextString = line.Text
+                            TextString = line.Text,
+                            TextStyleId = standardStyleId
                         };
 
                         modelSpace.AppendEntity(dbText);
