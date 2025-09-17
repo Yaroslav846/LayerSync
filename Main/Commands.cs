@@ -189,6 +189,7 @@ namespace LayerSync.Main
                 lm.CurrentLayout = "Model";
 
                 var psv = PlotSettingsValidator.Current;
+                psv.RefreshLists();
 
                 const string requiredPlotter = "DWG To PNG.pc3";
                 if (!psv.GetPlotDeviceList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
