@@ -175,7 +175,9 @@ namespace LayerSync.Core
 
             using (var engine = new TesseractEngine(tessdataPath, "rus", EngineMode.Default))
             {
-                engine.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,-+/\\°:;()[]{}<>_");
+                var russianAlphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+                var latinAlphabetAndSymbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,-+/\\°:;()[]{}<>_";
+                engine.SetVariable("tessedit_char_whitelist", russianAlphabet + latinAlphabetAndSymbols);
 
                 var recognizedCharacters = new List<Tuple<Extents3d, string>>();
                 foreach (var cluster in clusters)
