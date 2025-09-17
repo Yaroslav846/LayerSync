@@ -276,7 +276,7 @@ namespace LayerSync.Core
                     }
                 }
 
-                using (var pix = Pix.LoadFromBitmap(bmp))
+                using (var pix = PixConverter.ToPix(bmp))
                 {
                     using (var page = engine.Process(pix, PageSegMode.SingleChar))
                     {
