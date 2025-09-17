@@ -33,25 +33,12 @@ namespace LayerSync.Main
             AcadApplication.ShowModelessWindow(_layerWindow);
         }
 
-        // JULES: The existing implementation is a great start, but it can fail silently.
-        // My plan is to make it more robust by:
-        // 1. Adding better error reporting with MessageBox popups.
-        // 2. Refactoring the complex plotting logic into a separate method.
-        // 3. Validating that required plot configurations exist before trying to use them.
         [CommandMethod("RECOGNIZETEXT")]
         public void RecognizeText()
         {
-            // Use the alias to specify the AutoCAD Application
             Document doc = AcadApplication.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
-
-            // For production use, it's recommended to set the license key here
-            // from a secure source like a config file or environment variable.
-            // IronOcr.Installation.LicenseKey = "YOUR_LICENSE_KEY";
-
-            // Modern IronOcr versions handle language pack installation automatically.
-            // Ensure you have the necessary models available in your environment.
 
             TypedValue[] filterList = new TypedValue[]
             {
@@ -118,12 +105,6 @@ namespace LayerSync.Main
             }
         }
 
-        // JULES: This method is very complex and has many potential points of failure
-        // (e.g., missing plotters, file permissions, zero-area plots).
-        // I will refactor this to:
-        // - Add verbose, user-facing error reporting via MessageBox.
-        // - Check for required PC3 and CTB files before plotting.
-        // - Extract the plotting logic into a dedicated helper method for clarity.
         private string RecognizeTextFromCluster(List<Entity> cluster, Document doc, IronTesseract ocr)
         {
             Editor ed = AcadApplication.DocumentManager.MdiActiveDocument.Editor;
@@ -132,7 +113,12 @@ namespace LayerSync.Main
             var clusterExtents = new Extents3d();
             foreach (var ent in cluster)
             {
-                try { if (ent.GeometricExtents.MinPoint.X < ent.GeometricExtents.MaxPoint.X) clusterExtents.AddExtents(ent.GeometricExtents); }
+                try {
+                    if (ent.GeometricExtents.MinPoint.X < ent.GeometricExtents.MaxPoint.X)
+                    {
+                        clusterExtents.AddExtents(ent.GeometricExtents);
+                    }
+                }
                 catch { /* Ignore entities that might not have valid extents */ }
             }
 
@@ -147,10 +133,8 @@ namespace LayerSync.Main
             string tempPngFile = null;
             try
             {
-                // JULES: Plotting logic is now refactored into its own method for clarity and robustness.
                 tempPngFile = PlotClusterToPng(clusterExtents, doc);
 
-                // If plotting fails, PlotClusterToPng returns null and shows its own error.
                 if (string.IsNullOrEmpty(tempPngFile) || !File.Exists(tempPngFile))
                 {
                     ed.WriteMessage("\nPlotting failed or produced no file, skipping OCR for this cluster.");
@@ -167,11 +151,8 @@ namespace LayerSync.Main
             }
             catch (System.Exception ex)
             {
-                // JULES: The original code failed silently to the user. This provides a clear popup.
-                // It also keeps the detailed log on the command line for power-user debugging.
                 ed.WriteMessage($"\n--- DETAILED ERROR during text recognition cluster processing ---\n{ex.ToString()}\n--- END DETAILED ERROR ---");
 
-                // Show a user-friendly message box.
                 string message = $"An unexpected error occurred while trying to process a text cluster.\n\n" +
                                  $"Error: {ex.Message}\n\n" +
                                  "Please check the AutoCAD command line for a detailed log. " +
@@ -193,12 +174,6 @@ namespace LayerSync.Main
             return "";
         }
 
-        /// <summary>
-        /// Plots a specific area of the drawing to a temporary PNG file.
-        /// </summary>
-        /// <param name="clusterExtents">The area to plot.</param>
-        /// <param name="doc">The active document.</param>
-        /// <returns>The path to the created PNG file, or null if plotting fails.</returns>
         private string PlotClusterToPng(Extents3d clusterExtents, Document doc)
         {
             Editor ed = doc.Editor;
@@ -207,83 +182,81 @@ namespace LayerSync.Main
 
             LayoutManager lm = LayoutManager.Current;
             string originalLayout = lm.CurrentLayout;
-            ed.WriteMessage($"\nOriginal layout is '{originalLayout}'. Switching to 'Model' for plotting.");
+            ed.WriteMessage($"\nOriginal layout is '{originalLayout}'. Switching to 'Model' for plotting to ensure a clean context.");
 
             try
             {
-                // JULES: Force switch to Model layout to ensure a clean plotting context.
                 lm.CurrentLayout = "Model";
 
-                // JULES: Check for required plot configurations before attempting to plot.
                 var psv = PlotSettingsValidator.Current;
 
-            const string requiredPlotter = "DWG To PNG.pc3";
-            if (!psv.GetPlotDeviceList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
-            {
-                string msg = $"Required plotter configuration '{requiredPlotter}' was not found. Please configure it in AutoCAD's plot manager.";
-                MessageBox.Show(msg, "Plotter Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-                ed.WriteMessage($"\nERROR: {msg}");
-                return null;
-            }
-
-            const string requiredStyleSheet = "monochrome.ctb";
-            if (!psv.GetPlotStyleSheetList().Cast<string>().Contains(requiredStyleSheet, StringComparer.OrdinalIgnoreCase))
-            {
-                string msg = $"Required plot style table '{requiredStyleSheet}' was not found. Please ensure it is in AutoCAD's support paths.";
-                MessageBox.Show(msg, "Plot Style Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-                ed.WriteMessage($"\nERROR: {msg}");
-                return null;
-            }
-
-            LayoutManager lm = LayoutManager.Current;
-            ObjectId layoutId = lm.GetLayoutId(lm.CurrentLayout);
-
-            using (var layout = (Layout)layoutId.GetObject(OpenMode.ForRead))
-            using (var plotInfo = new PlotInfo())
-            using (var plotSettings = new PlotSettings(layout.ModelType))
-            {
-                plotInfo.Layout = layout.Id;
-                // JULES: Removing CopyFrom(layout) as it's suspected of carrying over
-                // conflicting settings that cause eInvalidInput errors.
-                // plotSettings.CopyFrom(layout);
-
-                // JULES: Reordered these calls to prevent eInvalidInput error.
-                // The device must be set before properties that depend on it.
-                // JULES: Passing null for mediaName to let AutoCAD use the device default,
-                // as "PNG" was causing an eInvalidInput error.
-                psv.SetPlotConfigurationName(plotSettings, requiredPlotter, null);
-                psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
-                psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
-                psv.SetPlotCentered(plotSettings, true);
-                psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
-                psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
-                psv.SetCurrentStyleSheet(plotSettings, requiredStyleSheet);
-
-                plotInfo.OverrideSettings = plotSettings;
-
-                var plotInfoValidator = new PlotInfoValidator();
-                plotInfoValidator.Validate(plotInfo);
-
-                if (PlotFactory.ProcessPlotState != ProcessPlotState.NotPlotting)
+                const string requiredPlotter = "DWG To PNG.pc3";
+                if (!psv.GetPlotDeviceList().Cast<string>().Contains(requiredPlotter, StringComparer.OrdinalIgnoreCase))
                 {
-                    ed.WriteMessage("\nPlot engine is busy. Cannot plot cluster at this time.");
+                    string msg = $"Required plotter configuration '{requiredPlotter}' was not found. Please configure it in AutoCAD's plot manager.";
+                    MessageBox.Show(msg, "Plotter Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ed.WriteMessage($"\nERROR: {msg}");
                     return null;
                 }
 
-                ed.WriteMessage("\nPlot engine is not busy. Starting plot...");
-                using (var plotEngine = PlotFactory.CreatePublishEngine())
+                const string requiredStyleSheet = "monochrome.ctb";
+                if (!psv.GetPlotStyleSheetList().Cast<string>().Contains(requiredStyleSheet, StringComparer.OrdinalIgnoreCase))
                 {
-                    plotEngine.BeginPlot(null, null);
-                    plotEngine.BeginDocument(plotInfo, doc.Name, null, 1, true, tempPngFile);
-                    plotEngine.BeginPage(new PlotPageInfo(), plotInfo, true, null);
-                    plotEngine.BeginGenerateGraphics(null);
-                    plotEngine.EndGenerateGraphics(null);
-                    plotEngine.EndPage(null);
-                    plotEngine.EndDocument(null);
-                    plotEngine.EndPlot(null);
+                    string msg = $"Required plot style table '{requiredStyleSheet}' was not found. Please ensure it is in AutoCAD's support paths.";
+                    MessageBox.Show(msg, "Plot Style Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ed.WriteMessage($"\nERROR: {msg}");
+                    return null;
                 }
-                ed.WriteMessage("\nPlotting complete.");
-                return tempPngFile;
+
+                ObjectId layoutId = lm.GetLayoutId("Model");
+
+                using (var layout = (Layout)layoutId.GetObject(OpenMode.ForRead))
+                using (var plotInfo = new PlotInfo())
+                using (var plotSettings = new PlotSettings(layout.ModelType))
+                {
+                    plotInfo.Layout = layout.Id;
+
+                    psv.SetPlotConfigurationName(plotSettings, requiredPlotter, null);
+                    psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
+                    psv.SetPlotWindowArea(plotSettings, new Extents2d(clusterExtents.MinPoint.X, clusterExtents.MinPoint.Y, clusterExtents.MaxPoint.X, clusterExtents.MaxPoint.Y));
+                    psv.SetPlotCentered(plotSettings, true);
+                    psv.SetPlotRotation(plotSettings, PlotRotation.Degrees000);
+                    psv.SetStdScaleType(plotSettings, StdScaleType.ScaleToFit);
+                    psv.SetCurrentStyleSheet(plotSettings, requiredStyleSheet);
+
+                    plotInfo.OverrideSettings = plotSettings;
+                    var plotInfoValidator = new PlotInfoValidator();
+                    plotInfoValidator.Validate(plotInfo);
+
+                    if (PlotFactory.ProcessPlotState != ProcessPlotState.NotPlotting)
+                    {
+                        ed.WriteMessage("\nPlot engine is busy. Cannot plot cluster at this time.");
+                        return null;
+                    }
+
+                    ed.WriteMessage("\nPlot engine is not busy. Starting plot...");
+                    using (var plotEngine = PlotFactory.CreatePublishEngine())
+                    {
+                        plotEngine.BeginPlot(null, null);
+                        plotEngine.BeginDocument(plotInfo, doc.Name, null, 1, true, tempPngFile);
+                        plotEngine.BeginPage(new PlotPageInfo(), plotInfo, true, null);
+                        plotEngine.BeginGenerateGraphics(null);
+                        plotEngine.EndGenerateGraphics(null);
+                        plotEngine.EndPage(null);
+                        plotEngine.EndDocument(null);
+                        plotEngine.EndPlot(null);
+                    }
+                    ed.WriteMessage("\nPlotting complete.");
+                    return tempPngFile;
+                }
+            }
+            finally
+            {
+                if (lm.CurrentLayout != originalLayout)
+                {
+                    ed.WriteMessage($"\nSwitching back to original layout '{originalLayout}'.");
+                    lm.CurrentLayout = originalLayout;
+                }
             }
         }
 
@@ -305,7 +278,6 @@ namespace LayerSync.Main
             double averageHeight = entities.Count > 0 ? totalHeight / entities.Count : 0;
             double tolerance = averageHeight * 1.5;
 
-            // JULES: Log clustering parameters for debugging.
             var ed = AcadApplication.DocumentManager.MdiActiveDocument.Editor;
             ed.WriteMessage($"\nClustering with average height: {averageHeight:F2}, tolerance: {tolerance:F2}.");
 
