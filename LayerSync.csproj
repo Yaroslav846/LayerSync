@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="accoremgd">
       <HintPath>C:\Program Files\Autodesk\AutoCAD 2026\accoremgd.dll</HintPath>
       <Private>False</Private>
@@ -31,15 +35,4 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-    <PackageReference Include="Tesseract" Version="5.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-    <PackageReference Include="Tesseract" Version="5.2.0" />
-  </ItemGroup>
-
 </Project>
