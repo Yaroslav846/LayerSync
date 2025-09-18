@@ -260,31 +260,43 @@ namespace LayerSync.Core
             var imageSize = (int)Math.Ceiling(Math.Max(width, height) + 2 * padding);
             if (imageSize < 20) imageSize = 20;
 
-            using (var bmp = new Bitmap(imageSize, imageSize))
-            using (var gfx = Graphics.FromImage(bmp))
+            Bitmap renderedBmp = null;
+            try
             {
-                gfx.SmoothingMode = SmoothingMode.AntiAlias;
-                gfx.Clear(Color.White);
-
-                var transform = new Matrix();
-                transform.Translate(-(float)(extents.MinPoint.X - padding), -(float)(extents.MinPoint.Y - padding));
-                gfx.Transform = transform;
-
-                using (var pen = new Pen(Color.Black, Math.Max(2, imageSize / 20f)))
+                renderedBmp = new Bitmap(imageSize, imageSize);
+                using (var gfx = Graphics.FromImage(renderedBmp))
                 {
-                    foreach (var entity in cluster)
+                    gfx.SmoothingMode = SmoothingMode.AntiAlias;
+                    gfx.Clear(Color.White);
+
+                    var transform = new Matrix();
+                    transform.Translate(-(float)(extents.MinPoint.X - padding), -(float)(extents.MinPoint.Y - padding));
+                    gfx.Transform = transform;
+
+                    using (var pen = new Pen(Color.Black, Math.Max(2, imageSize / 20f)))
                     {
-                        DrawEntity(gfx, pen, entity);
+                        foreach (var entity in cluster)
+                        {
+                            DrawEntity(gfx, pen, entity);
+                        }
                     }
                 }
 
-                using (var pix = PixConverter.ToPix(bmp))
+                // Binarize the rendered image to improve OCR accuracy
+                using (var binaryBmp = BinarizeBitmap(renderedBmp))
                 {
-                    using (var page = engine.Process(pix, PageSegMode.SingleChar))
+                    using (var pix = PixConverter.ToPix(binaryBmp))
                     {
-                        return page.GetText().Trim();
+                        using (var page = engine.Process(pix, PageSegMode.SingleChar))
+                        {
+                            return page.GetText().Trim();
+                        }
                     }
                 }
+            }
+            finally
+            {
+                renderedBmp?.Dispose();
             }
         }
 
@@ -360,6 +372,28 @@ namespace LayerSync.Core
         private PointF ToPointF(Point3d pt)
         {
             return new PointF((float)pt.X, (float)pt.Y);
+        }
+
+        private Bitmap BinarizeBitmap(Bitmap source, byte threshold = 128)
+        {
+            Bitmap result = new Bitmap(source.Width, source.Height);
+            for (int i = 0; i < source.Width; i++)
+            {
+                for (int j = 0; j < source.Height; j++)
+                {
+                    Color c = source.GetPixel(i, j);
+                    byte brightness = (byte)((c.R + c.G + c.B) / 3);
+                    if (brightness < threshold)
+                    {
+                        result.SetPixel(i, j, Color.Black);
+                    }
+                    else
+                    {
+                        result.SetPixel(i, j, Color.White);
+                    }
+                }
+            }
+            return result;
         }
     }
 }
