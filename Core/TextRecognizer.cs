@@ -332,12 +332,17 @@ namespace LayerSync.Core
                 return double.MaxValue;
             }
 
-            double totalDistance = 0;
-            totalDistance += segmentsA.Sum(segA => segmentsB.Min(segB => SegmentDistance(segA, segB)));
-            totalDistance += segmentsB.Sum(segB => segmentsA.Min(segA => SegmentDistance(segB, segA)));
+            // Calculate the sum of minimum distances from each segment in A to the nearest segment in B
+            double sumDistA_to_B = segmentsA.Sum(segA => segmentsB.Min(segB => SegmentDistance(segA, segB)));
+            // Calculate the sum of minimum distances from each segment in B to the nearest segment in A
+            double sumDistB_to_A = segmentsB.Sum(segB => segmentsA.Min(segA => SegmentDistance(segB, segA)));
 
-            // Normalize the score by the total number of segments to make it comparable across different shapes
-            return totalDistance / (segmentsA.Count + segmentsB.Count);
+            // Calculate the average distance in each direction, then average the two results.
+            // This is a more robust, symmetric Hausdorff-like distance metric.
+            double avgDistA = sumDistA_to_B / segmentsA.Count;
+            double avgDistB = sumDistB_to_A / segmentsB.Count;
+
+            return (avgDistA + avgDistB) / 2.0;
         }
 
         private double SegmentDistance(NormalizedSegment segA, NormalizedSegment segB)
