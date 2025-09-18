@@ -1,7 +1,6 @@
 ﻿using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using LayerSync.UI.Views;
-using LayerSync.Core;
 
 // The namespace must be unique
 namespace LayerSync.Main
@@ -36,8 +35,7 @@ namespace LayerSync.Main
         [CommandMethod("RECOGNIZETEXT")]
         public void RecognizeTextCommand()
         {
-            var recognizer = new TextRecognizer();
-            recognizer.RecognizeText();
+            Core.AcadService.RecognizeTextFromSelection();
         }
     }
 }
