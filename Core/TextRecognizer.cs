@@ -90,7 +90,8 @@ namespace LayerSync.Core
 
             foreach (var cluster in clusters)
             {
-                string recognizedChar = RecognizeCluster(db, cluster);
+                string recognizedChar = RecognizeCluster(db, ed, cluster);
+
                 if (!string.IsNullOrEmpty(recognizedChar))
                 {
                     ed.WriteMessage($"\n  Cluster of {cluster.Count} curves recognized as: '{recognizedChar}'");
@@ -209,7 +210,7 @@ namespace LayerSync.Core
 
         #region Recognition Logic
 
-        private string RecognizeCluster(Database db, List<ObjectId> clusterIds)
+        private string RecognizeCluster(Database db, Editor ed, List<ObjectId> clusterIds)
         {
             List<NormalizedSegment> normalizedSegments = NormalizeCluster(db, clusterIds);
             if (!normalizedSegments.Any()) return null;
@@ -226,6 +227,9 @@ namespace LayerSync.Core
                     bestMatch = template.Character;
                 }
             }
+
+            // Add a debug message to show the score for each cluster.
+            ed.WriteMessage($"\n  -> Debug: Cluster best match is '{bestMatch}' with score {bestScore:F4}. Threshold is {RecognitionThreshold}.");
 
             if (bestScore < RecognitionThreshold)
             {
