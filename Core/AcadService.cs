@@ -6,7 +6,6 @@ using LayerSync.UI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LayerSync.Core.TextRecognition;
 
 namespace LayerSync.Core
 {
@@ -458,116 +457,6 @@ namespace LayerSync.Core
                     }
                 }
             }
-        }
-
-        public static void RecognizeTextFromSelection()
-        {
-            var doc = Application.DocumentManager.MdiActiveDocument;
-            if (doc == null) return;
-            var db = doc.Database;
-            var ed = doc.Editor;
-
-            // Define a selection filter to allow only curve types
-            var filter = new SelectionFilter(new[]
-            {
-                new TypedValue((int)DxfCode.Start, "LINE,ARC,CIRCLE,ELLIPSE,POLYLINE,LWPOLYLINE,SPLINE")
-            });
-
-            var promptOptions = new PromptSelectionOptions
-            {
-                MessageForAdding = "\nSelect geometric primitives to recognize as text: "
-            };
-
-            var selectionResult = ed.GetSelection(promptOptions, filter);
-
-            if (selectionResult.Status != PromptStatus.OK)
-            {
-                return; // User cancelled
-            }
-
-            var selectionSet = selectionResult.Value;
-            var objectIds = selectionSet.GetObjectIds();
-
-            if (objectIds.Length == 0)
-            {
-                ed.WriteMessage("\nNo objects selected.");
-                return;
-            }
-
-            var curves = new List<Curve>();
-            using (var tr = db.TransactionManager.StartTransaction())
-            {
-                foreach (ObjectId objId in objectIds)
-                {
-                    var entity = tr.GetObject(objId, OpenMode.ForRead);
-                    if (entity is Curve curve)
-                    {
-                        curves.Add(curve);
-                    }
-                }
-                tr.Commit();
-            }
-
-            // For now, just report the number of curves collected.
-            // In the next steps, this 'curves' list will be passed to the recognition logic.
-            var segmenter = new CharacterSegmenter(); // Using default tolerance for now
-            var characterClusters = segmenter.Segment(curves);
-
-            if (characterClusters.Count == 0)
-            {
-                Application.ShowAlertDialog("No character patterns were found in the selection.");
-                return;
-            }
-
-            var featureExtractor = new CharacterFeatureExtractor();
-            var templateMatcher = new TemplateMatcher();
-            var recognizedCharacters = new List<RecognizedCharacter>();
-
-            foreach (var cluster in characterClusters)
-            {
-                var features = featureExtractor.ExtractFeatures(cluster);
-                char recognizedChar = templateMatcher.Match(features, out double score);
-                recognizedCharacters.Add(new RecognizedCharacter(recognizedChar, cluster));
-            }
-
-            var reconstructor = new TextReconstructor();
-            string finalText = reconstructor.Reconstruct(recognizedCharacters);
-
-            if (string.IsNullOrWhiteSpace(finalText))
-            {
-                Application.ShowAlertDialog("Could not recognize any text from the selection.");
-                return;
-            }
-
-            // Prompt user for insertion point
-            var ppo = new PromptPointOptions("\nSelect insertion point for the recognized text: ");
-            var ppr = ed.GetPoint(ppo);
-
-            if (ppr.Status != PromptStatus.OK) return; // User cancelled
-
-            Point3d insertionPoint = ppr.Value;
-
-            // Create the new MText entity
-            using (var tr = db.TransactionManager.StartTransaction())
-            {
-                var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForWrite);
-
-                using (var mText = new MText())
-                {
-                    mText.Contents = finalText;
-                    mText.Location = insertionPoint;
-                    // Optional: Set text style, height, etc. from current settings
-                    mText.TextStyleId = db.Textstyle;
-                    mText.TextHeight = db.Textsize;
-
-                    modelSpace.AppendEntity(mText);
-                    tr.AddNewlyCreatedDBObject(mText, true);
-                }
-
-                tr.Commit();
-            }
-
-            ed.WriteMessage($"\nText recognized and inserted into drawing.");
         }
     }
 }

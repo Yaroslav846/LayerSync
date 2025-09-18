@@ -31,12 +31,6 @@ namespace LayerSync.Main
             // This allows interaction with the drawing while the window is open.
             Application.ShowModelessWindow(_layerWindow);
         }
-
-        [CommandMethod("RECOGNIZETEXT")]
-        public void RecognizeTextCommand()
-        {
-            Core.AcadService.RecognizeTextFromSelection();
-        }
     }
 }
 
