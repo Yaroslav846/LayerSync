@@ -1,6 +1,7 @@
 ﻿using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using LayerSync.UI.Views;
+using LayerSync.Core;
 
 // The namespace must be unique
 namespace LayerSync.Main
@@ -30,6 +31,13 @@ namespace LayerSync.Main
             // Show the window as modeless, parented to the AutoCAD main window.
             // This allows interaction with the drawing while the window is open.
             Application.ShowModelessWindow(_layerWindow);
+        }
+
+        [CommandMethod("RECOGNIZETEXT")]
+        public void RecognizeTextCommand()
+        {
+            var recognizer = new TextRecognizer();
+            recognizer.RecognizeText();
         }
     }
 }
