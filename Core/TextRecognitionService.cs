@@ -287,7 +287,7 @@ namespace LayerSync.Core
                 {
                     using (var pix = PixConverter.ToPix(binaryBmp))
                     {
-                        using (var page = engine.Process(pix, PageSegMode.SingleChar))
+                        using (var page = engine.Process(pix, PageSegMode.Auto))
                         {
                             return page.GetText().Trim();
                         }
