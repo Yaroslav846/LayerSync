@@ -60,7 +60,7 @@ namespace LayerSync.Core
         #endregion
 
         private static List<CharacterTemplate> _characterTemplates;
-        private const double RecognitionThreshold = 0.15; // Tuned for the new comparison logic
+        private const double RecognitionThreshold = 0.3; // Increased to handle user's complex drawing
 
         public void RecognizeText()
         {
