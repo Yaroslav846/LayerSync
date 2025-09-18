@@ -106,7 +106,8 @@ namespace LayerSync.Core
                             bounds.MinPoint.Y,
                             0
                         );
-                        string layer = tr.GetObject(cluster.First(), OpenMode.ForRead).Layer;
+                        var entity = (Entity)tr.GetObject(cluster.First(), OpenMode.ForRead);
+                        string layer = entity.Layer;
 
                         textToCreate.Add(new TextCreationInfo
                         {
