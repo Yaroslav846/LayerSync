@@ -15,6 +15,7 @@ using View = Autodesk.AutoCAD.GraphicsSystem.View;
 using Tesseract;
 using Autodesk.AutoCAD.GraphicsInterface;
 using Autodesk.AutoCAD.PlottingServices;
+using Autodesk.AutoCAD.Publish;
 
 
 namespace LayerSync.Core

@@ -30,6 +30,10 @@
       <HintPath>C:\Program Files\Autodesk\AutoCAD 2026\acmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="AcPublish">
+      <HintPath>C:\Program Files\Autodesk\AutoCAD 2026\AcPublish.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
