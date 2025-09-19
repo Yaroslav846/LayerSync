@@ -13,6 +13,7 @@ using System.Drawing.Imaging;
 using Point3d = Autodesk.AutoCAD.Geometry.Point3d;
 using View = Autodesk.AutoCAD.GraphicsSystem.View;
 using Tesseract;
+using Autodesk.AutoCAD.GraphicsInterface;
 
 
 namespace LayerSync.Core
@@ -535,14 +536,9 @@ namespace LayerSync.Core
                 foreach (ObjectId id in objectIds)
                 {
                     var ent = tr.GetObject(id, OpenMode.ForRead) as Entity;
-                    if (ent != null)
+                    if (ent != null && ent.Bounds.HasValue)
                     {
-                        // Add the entity's bounds to the total bounds
-                        // A null check on ent.Bounds is important as some entities might not have bounds.
-                        if (ent.Bounds.HasValue)
-                        {
-                            bounds.AddExtents(ent.Bounds.Value);
-                        }
+                        bounds.AddExtents(ent.Bounds.Value);
                     }
                 }
                 tr.Commit();
@@ -550,7 +546,7 @@ namespace LayerSync.Core
 
             if (!bounds.MinPoint.IsEqualTo(new Point3d()) && !bounds.MaxPoint.IsEqualTo(new Point3d()))
             {
-                // We have valid bounds, proceed with export.
+                // We have valid bounds
             }
             else
             {
@@ -558,65 +554,53 @@ namespace LayerSync.Core
                 return null;
             }
 
-            // Use Graphics System to get a snapshot
-            var gsManager = Manager.FromActiveViewport();
+            var gsManager = Application.DocumentManager.MdiActiveDocument.GraphicsManager;
             if (gsManager == null)
             {
                 ed.WriteMessage("\nCould not get Graphics System Manager.");
                 return null;
             }
 
-            // Create a GsView for the snapshot
             using (View view = new View())
             {
                 gsManager.Add(view);
 
-                // Set the view to the extents of the selection
-                view.SetView(bounds.MinPoint, bounds.MaxPoint, new Autodesk.AutoCAD.Geometry.Vector3d(0, 0, 1), Autodesk.AutoCAD.Geometry.Vector3d.YAxis);
-                view.RenderType = RenderType.Wireframe2D;
-                view.VisualStyle = new VisualStyle(VisualStyleType.Wireframe);
+                Point3d center = bounds.MinPoint + (bounds.MaxPoint - bounds.MinPoint) / 2.0;
+                Point3d cameraPos = new Point3d(center.X, center.Y, center.Z + 1.0);
+                Autodesk.AutoCAD.Geometry.Vector3d upVector = new Autodesk.AutoCAD.Geometry.Vector3d(0, 1, 0);
+                double fieldWidth = bounds.MaxPoint.X - bounds.MinPoint.X;
+                double fieldHeight = bounds.MaxPoint.Y - bounds.MinPoint.Y;
 
-                // Hide grid and other visual noise
-                view.GridOn = false;
-                view.ViewportBorderVisible = false;
+                view.SetView(center, cameraPos, upVector, fieldWidth, fieldHeight);
+                view.VisualStyle = new VisualStyle(VisualStyleType.HiddenLine);
+                view.BackgroundId = new IntPtr(1); // Standard monochrome background
 
-                // High resolution for OCR
                 int dpi = 300;
-                double viewWidth = bounds.MaxPoint.X - bounds.MinPoint.X;
-                double viewHeight = bounds.MaxPoint.Y - bounds.MinPoint.Y;
+                int imageWidth = (int)(fieldWidth * dpi);
+                int imageHeight = (int)(fieldHeight * dpi);
 
-                // Maintain aspect ratio
-                int imageWidth = (int)(viewWidth * dpi);
-                int imageHeight = (int)(viewHeight * dpi);
-
-                if (imageWidth == 0 || imageHeight == 0)
+                if (imageWidth <= 0 || imageHeight <= 0)
                 {
-                    ed.WriteMessage("\nCalculated image size is zero. Cannot export.");
+                    ed.WriteMessage("\nCalculated image size is invalid. Cannot export.");
+                    gsManager.Erase(view);
+                    gsManager.Update();
                     return null;
                 }
 
-                using (var bmp = new Bitmap(imageWidth, imageHeight))
+                using (var snapshot = view.GetSnapshot(new Rectangle(0, 0, imageWidth, imageHeight)))
                 {
-                    using (var gfx = Graphics.FromImage(bmp))
-                    {
-                        // Set a white background
-                        gfx.Clear(System.Drawing.Color.White);
-
-                        // Get the snapshot
-                        view.Viewport(gfx, new Rectangle(0, 0, imageWidth, imageHeight));
-                    }
-
-                    // Save to a temporary file
-                    string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-                    bmp.Save(tempPath, ImageFormat.Png);
-
-                    // Cleanup the GsView
                     gsManager.Erase(view);
                     gsManager.Update();
 
-                    return tempPath;
+                    if (snapshot != null)
+                    {
+                        string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
+                        snapshot.Save(tempPath, System.Drawing.Imaging.ImageFormat.Png);
+                        return tempPath;
+                    }
                 }
             }
+            return null;
         }
 
         private static string PerformOcr(string imagePath, string language)
