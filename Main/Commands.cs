@@ -1,6 +1,8 @@
 ﻿using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using LayerSync.UI.Views;
+using Autodesk.AutoCAD.EditorInput;
+using Autodesk.AutoCAD.DatabaseServices;
 
 // The namespace must be unique
 namespace LayerSync.Main
@@ -30,6 +32,59 @@ namespace LayerSync.Main
             // Show the window as modeless, parented to the AutoCAD main window.
             // This allows interaction with the drawing while the window is open.
             Application.ShowModelessWindow(_layerWindow);
+        }
+
+        [CommandMethod("RECOGNIZETEXT")]
+        public void RecognizeTextCommand()
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument;
+            if (doc == null) return;
+            var ed = doc.Editor;
+
+            // Create a selection filter to allow only specific entity types
+            var filterList = new TypedValue[] {
+                new TypedValue((int)DxfCode.Operator, "<or>"),
+                new TypedValue((int)DxfCode.Start, "LINE"),
+                new TypedValue((int)DxfCode.Start, "POLYLINE"),
+                new TypedValue((int)DxfCode.Start, "LWPOLYLINE"),
+                new TypedValue((int)DxfCode.Start, "ARC"),
+                new TypedValue((int)DxfCode.Start, "SPLINE"),
+                new TypedValue((int)DxfCode.Operator, "</or>")
+            };
+            var filter = new SelectionFilter(filterList);
+
+            var options = new PromptSelectionOptions
+            {
+                MessageForAdding = "\nSelect geometric primitives to recognize as text: "
+            };
+
+            var result = ed.GetSelection(options, filter);
+
+            if (result.Status != PromptStatus.OK)
+            {
+                ed.WriteMessage("\nSelection cancelled.");
+                return;
+            }
+
+            SelectionSet selectionSet = result.Value;
+            ed.WriteMessage($"\n{selectionSet.Count} objects selected for text recognition.");
+
+            // Prompt for language
+            var langOptions = new PromptStringOptions("\nEnter OCR language (e.g., eng, rus): ");
+            langOptions.DefaultValue = "eng";
+            langOptions.AllowSpaces = false;
+            var langResult = ed.GetString(langOptions);
+
+            if (langResult.Status != PromptStatus.OK)
+            {
+                ed.WriteMessage("\nLanguage selection cancelled.");
+                return;
+            }
+
+            string language = langResult.StringResult;
+
+            // Call the AcadService to process the selection
+            Core.AcadService.ProcessTextRecognition(selectionSet, language);
         }
     }
 }

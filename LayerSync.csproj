@@ -31,4 +31,9 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tesseract.Net.SDK" Version="1.5.1" />
+  </ItemGroup>
+
 </Project>
