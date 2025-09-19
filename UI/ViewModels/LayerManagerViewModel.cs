@@ -1,20 +1,14 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows;
 using System.Windows.Input;
-using System.Windows.Forms;
 using LayerSync.Core;
-using LayerSync.UI.Core;
 using Autodesk.AutoCAD.Windows;
-using AcadApp = Autodesk.AutoCAD.ApplicationServices.Application;
-using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
+using Microsoft.UI.Dispatching;
 
 namespace LayerSync.UI.ViewModels
 {
-    /// <summary>
-    /// Main ViewModel for the layer manager window.
-    /// </summary>
     public class LayerManagerViewModel : ViewModelBase
     {
         private ObservableCollection<LayerItemViewModel> _layers;
@@ -22,6 +16,7 @@ namespace LayerSync.UI.ViewModels
         private string _searchText = "";
         private List<LayerItemViewModel> _allLayers;
 
+        public DispatcherQueue Dispatcher { get; set; }
 
         public ObservableCollection<LayerItemViewModel> Layers
         {
@@ -48,12 +43,13 @@ namespace LayerSync.UI.ViewModels
                 _selectedLayer = value;
                 OnPropertyChanged();
 
-                // --- ВОТ ИЗМЕНЕНИЕ: Включаем подсветку объектов ---
                 AcadService.HighlightEntitiesOnLayer(_selectedLayer?.Name);
 
                 ((RelayCommand)SetCurrentCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)ChangeColorCommand).RaiseCanExecuteChanged();
-                ((RelayCommand)SelectByColorCommand)?.RaiseCanExecuteChanged();
+                ((RelayCommand)SelectByColorCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)DeleteLayersCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)MoveSelectionToLayerCommand).RaiseCanExecuteChanged();
             }
         }
 
@@ -65,7 +61,7 @@ namespace LayerSync.UI.ViewModels
         public ICommand CreateLayerCommand { get; }
         public ICommand CancelNewLayerCommand { get; }
         public ICommand DeleteLayersCommand { get; }
-        public ICommand ToggleThemeCommand { get; }
+        public ICommand ToggleThemeCommand { get; set; }
         public ICommand MoveSelectionToLayerCommand { get; }
 
         private bool _isNewLayerModeActive;
@@ -92,32 +88,20 @@ namespace LayerSync.UI.ViewModels
             ChangeColorCommand = new RelayCommand(ExecuteChangeColor, CanExecuteChangeColor);
             RefreshCommand = new RelayCommand(ExecuteRefresh);
             SelectByColorCommand = new RelayCommand(ExecuteSelectByColor, CanExecuteSelectByColor);
-            NewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = true);
-            CreateLayerCommand = new RelayCommand(ExecuteCreateLayer, p => !string.IsNullOrWhiteSpace(NewLayerName));
-            CancelNewLayerCommand = new RelayCommand(p => IsNewLayerModeActive = false);
-            DeleteLayersCommand = new RelayCommand(ExecuteDeleteLayers, p => SelectedItems.Count > 0);
-            ToggleThemeCommand = new RelayCommand(ExecuteToggleTheme);
+            NewLayerCommand = new RelayCommand(() => IsNewLayerModeActive = true);
+            CreateLayerCommand = new RelayCommand(ExecuteCreateLayer, () => !string.IsNullOrWhiteSpace(NewLayerName));
+            CancelNewLayerCommand = new RelayCommand(() => IsNewLayerModeActive = false);
+            DeleteLayersCommand = new RelayCommand(ExecuteDeleteLayers, () => SelectedItems.Count > 0);
             MoveSelectionToLayerCommand = new RelayCommand(ExecuteMoveSelectionToLayer, CanExecuteMoveSelectionToLayer);
 
+            // ToggleThemeCommand is set by the view.
 
             LoadLayers();
             AcadService.SubscribeToAcadEvents();
             AcadService.LayerChanged += OnAcadLayerChanged;
         }
 
-        private bool CanExecuteSelectByColor(object obj)
-        {
-            return SelectedLayer != null;
-        }
-
-        private void ExecuteToggleTheme(object parameter)
-        {
-            if (parameter is System.Windows.Window window)
-            {
-                ThemeManager.ToggleTheme(window);
-            }
-        }
-
+        private bool CanExecuteSelectByColor(object obj) => SelectedLayer != null;
         private void ExecuteSelectByColor(object obj)
         {
             if (SelectedLayer != null)
@@ -126,32 +110,28 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        private bool CanExecuteMoveSelectionToLayer(object obj)
-        {
-            return SelectedLayer != null;
-        }
-
+        private bool CanExecuteMoveSelectionToLayer(object obj) => SelectedLayer != null;
         private void ExecuteMoveSelectionToLayer(object obj)
         {
             if (SelectedLayer == null) return;
-
             AcadService.MoveSelectedObjectsToLayer(SelectedLayer.Name);
-
-            // Refresh the layer list to update the object counts
             LoadLayers();
         }
 
         public void UpdateSelection(System.Collections.IList selectedItems)
         {
             SelectedItems.Clear();
-            foreach (LayerItemViewModel item in selectedItems)
+            if (selectedItems != null)
             {
-                SelectedItems.Add(item);
+                foreach (LayerItemViewModel item in selectedItems)
+                {
+                    SelectedItems.Add(item);
+                }
             }
-            (DeleteLayersCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            ((RelayCommand)DeleteLayersCommand).RaiseCanExecuteChanged();
         }
 
-        private void ExecuteCreateLayer(object obj)
+        private void ExecuteCreateLayer()
         {
             if (AcadService.CreateLayer(NewLayerName))
             {
@@ -161,7 +141,7 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        private void ExecuteDeleteLayers(object obj)
+        private void ExecuteDeleteLayers()
         {
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.DeleteLayers(layerNames);
@@ -175,10 +155,8 @@ namespace LayerSync.UI.ViewModels
                 clickedItem.IsFrozen = newState;
                 return;
             }
-
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsFrozen = newState);
-
             foreach (var item in SelectedItems)
             {
                 item.SetIsFrozenFromManager(newState);
@@ -192,10 +170,8 @@ namespace LayerSync.UI.ViewModels
                 clickedItem.IsOn = newState;
                 return;
             }
-
             var layerNames = SelectedItems.Select(i => i.Name).ToList();
             AcadService.BulkUpdateLayerProperties(layerNames, ltr => ltr.IsOff = !newState);
-
             foreach (var item in SelectedItems)
             {
                 item.SetIsOnFromManager(newState);
@@ -206,8 +182,7 @@ namespace LayerSync.UI.ViewModels
         {
             var filtered = string.IsNullOrWhiteSpace(SearchText)
                 ? _allLayers
-                : _allLayers.Where(l => l.Name.IndexOf(SearchText, System.StringComparison.OrdinalIgnoreCase) >= 0);
-
+                : _allLayers.Where(l => l.Name.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0);
             Layers.Clear();
             foreach (var layer in filtered)
             {
@@ -215,14 +190,10 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        /// <summary>
-        /// Loads or reloads the list of layers.
-        /// </summary>
         private void LoadLayers()
         {
             var layers = AcadService.GetAllLayers();
             var counts = AcadService.GetObjectCountsForAllLayers();
-
             foreach (var layer in layers)
             {
                 if (counts.TryGetValue(layer.Name, out int count))
@@ -230,18 +201,16 @@ namespace LayerSync.UI.ViewModels
                     layer.ObjectCount = count;
                 }
             }
-
             _allLayers = layers;
             FilterLayers();
         }
 
         private void OnAcadLayerChanged(object sender, string layerName)
         {
-            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            Dispatcher?.TryEnqueue(() =>
             {
-                var updatedLayerData = AcadService.GetAllLayers().FirstOrDefault(l => l.Name.Equals(layerName, System.StringComparison.OrdinalIgnoreCase));
-                var vmToUpdate = _allLayers.FirstOrDefault(l => l.Name.Equals(layerName, System.StringComparison.OrdinalIgnoreCase));
-
+                var updatedLayerData = AcadService.GetAllLayers().FirstOrDefault(l => l.Name.Equals(layerName, StringComparison.OrdinalIgnoreCase));
+                var vmToUpdate = _allLayers.FirstOrDefault(l => l.Name.Equals(layerName, StringComparison.OrdinalIgnoreCase));
                 if (vmToUpdate != null && updatedLayerData != null)
                 {
                     vmToUpdate.UpdateFrom(updatedLayerData);
@@ -253,8 +222,6 @@ namespace LayerSync.UI.ViewModels
                 }
             });
         }
-
-        // --- Command Logic ---
 
         private bool CanExecuteSetCurrent(object obj) => SelectedLayer != null && !SelectedLayer.IsCurrent;
         private void ExecuteSetCurrent(object obj)
@@ -269,12 +236,12 @@ namespace LayerSync.UI.ViewModels
         private bool CanExecuteChangeColor(object obj) => SelectedLayer != null;
         private void ExecuteChangeColor(object obj)
         {
-            ColorDialog acdColorDialog = new ColorDialog();
-            acdColorDialog.IncludeByBlockByLayer = false;
-
-            acdColorDialog.Color = SelectedLayer.AcadColor;
-
-            if (acdColorDialog.ShowDialog() == DialogResult.OK)
+            var acdColorDialog = new ColorDialog
+            {
+                IncludeByBlockByLayer = false,
+                Color = SelectedLayer.AcadColor
+            };
+            if (acdColorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 var newColor = acdColorDialog.Color;
                 AcadService.UpdateLayerProperty(SelectedLayer.Name, ltr => ltr.Color = newColor);
@@ -282,21 +249,16 @@ namespace LayerSync.UI.ViewModels
             }
         }
 
-        private void ExecuteRefresh(object obj)
+        private void ExecuteRefresh()
         {
             LoadLayers();
         }
 
-        /// <summary>
-        /// Method to clean up resources, called when the window is closed.
-        /// </summary>
         public void Cleanup()
         {
-            // --- ВОТ ИЗМЕНЕНИЕ: Снимаем подсветку при закрытии ---
             AcadService.HighlightEntitiesOnLayer(null);
             AcadService.UnsubscribeFromAcadEvents();
             AcadService.LayerChanged -= OnAcadLayerChanged;
         }
     }
 }
-

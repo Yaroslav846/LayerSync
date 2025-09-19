@@ -6,6 +6,14 @@
     <RootNamespace>LayerSync</RootNamespace>
     <AssemblyName>LayerSync</AssemblyName>
 
+    <!-- WinUI 3/XAML Islands Properties -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <WindowsPackageType>None</WindowsPackageType>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+
+
     <!-- Включаем поддержку WPF и Windows Forms -->
     <UseWpf>true</UseWpf>
     <UseWindowsForms>true</UseWindowsForms>
@@ -16,6 +24,12 @@
     <!-- Отключаем предупреждения о том, что сборки AutoCAD не нацелены на .NET Core -->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240428000" />
+    <PackageReference Include="Microsoft.Toolkit.Wpf.UI.XamlHost" Version="7.1.3" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="accoremgd">

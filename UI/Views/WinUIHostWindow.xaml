@@ -1,0 +1,10 @@
+<Window x:Class="LayerSync.UI.Views.WinUIHostWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:xamlhost="clr-namespace:Microsoft.Toolkit.Wpf.UI.XamlHost;assembly=Microsoft.Toolkit.Wpf.UI.XamlHost"
+        Title="Layer Synchronizer (WinUI 3)" Height="600" Width="450">
+    <Grid>
+        <xamlhost:WindowsXamlHost x:Name="MyXamlHost"
+                                  InitialTypeName="LayerSync.UI.WinUI.LayerManagerControl" />
+    </Grid>
+</Window>

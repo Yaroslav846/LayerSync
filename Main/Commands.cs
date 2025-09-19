@@ -8,7 +8,7 @@ namespace LayerSync.Main
     public class Commands
     {
         // Static variable to hold the single instance of our window.
-        private static LayerManagerWindow _layerWindow;
+        private static WinUIHostWindow _layerWindow;
 
         [CommandMethod("LAYERSYNC")]
         public void ShowLayerSyncWindow()
@@ -21,7 +21,7 @@ namespace LayerSync.Main
             }
 
             // Create a new instance of the window.
-            _layerWindow = new LayerManagerWindow();
+            _layerWindow = new WinUIHostWindow();
 
             // Add an event handler to the window's Closed event.
             // When the window is closed, we set our static variable to null.
