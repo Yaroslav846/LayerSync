@@ -531,8 +531,6 @@ namespace LayerSync.Core
             var db = doc.Database;
             var ed = doc.Editor;
 
-            // This is a bit of a workaround to make sure only the selected objects are plotted.
-            // We turn off all layers except the layers of the selected objects.
             List<ObjectId> layersToRestore = new List<ObjectId>();
             string tempLayerName = "TEMP_OCR_LAYER_" + Guid.NewGuid().ToString();
             ObjectId tempLayerId = ObjectId.Null;
@@ -541,13 +539,11 @@ namespace LayerSync.Core
             {
                 using (var tr = db.TransactionManager.StartTransaction())
                 {
-                    // Create a temporary layer for the objects
                     var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForWrite);
                     var newLayer = new LayerTableRecord { Name = tempLayerName };
                     tempLayerId = layerTable.Add(newLayer);
                     tr.AddNewlyCreatedDBObject(newLayer, true);
 
-                    // Move selected objects to the temporary layer
                     foreach (var id in objectIds)
                     {
                         var ent = tr.GetObject(id, OpenMode.ForWrite) as Entity;
@@ -557,7 +553,6 @@ namespace LayerSync.Core
                         }
                     }
 
-                    // Turn off all other layers
                     foreach (ObjectId layerId in layerTable)
                     {
                         if (layerId != tempLayerId)
@@ -574,7 +569,6 @@ namespace LayerSync.Core
                     tr.Commit();
                 }
 
-                // Now we can plot the current view, and only our objects should be visible.
                 Extents3d bounds = new Extents3d();
                 using (var tr = db.TransactionManager.StartTransaction())
                 {
@@ -600,14 +594,17 @@ namespace LayerSync.Core
 
                 using (var plotInfo = new PlotInfo())
                 {
-                    plotInfo.Layout = db.CurrentSpaceId;
-
-                    using (var plotSettings = new PlotSettings(true)) // Model type
+                    using (var plotSettings = new PlotSettings(true))
                     {
-                        plotSettings.CopyFrom(db.CurrentSpaceId);
+                        using (var tr = db.TransactionManager.StartTransaction())
+                        {
+                            var layout = (Layout)tr.GetObject(db.CurrentSpaceId, OpenMode.ForRead);
+                            plotSettings.CopyFrom(layout);
+                            tr.Commit();
+                        }
 
                         var psv = PlotSettingsValidator.Current;
-                        psv.SetPlotConfigurationName(plotSettings, "DWG To PNG.pc3", "PNG");
+                        psv.SetPlotConfigurationName(plotSettings, "DWG To PNG.pc3", "300_dpi");
                         psv.SetPlotType(plotSettings, Autodesk.AutoCAD.DatabaseServices.PlotType.Window);
                         psv.SetPlotWindowArea(plotSettings, new Extents2d(bounds.MinPoint.X, bounds.MinPoint.Y, bounds.MaxPoint.X, bounds.MaxPoint.Y));
                         psv.SetUseStandardScale(plotSettings, true);
@@ -618,49 +615,17 @@ namespace LayerSync.Core
 
                         plotInfo.OverrideSettings = plotSettings;
 
-                        using (var plotInfoValidator = new PlotInfoValidator())
-                        {
-                            plotInfoValidator.Validate(plotInfo);
+                        var plotManager = PlotManager.Current;
+                        plotManager.DoSingleSheetPlot(tempPath, plotInfo);
 
-                            if (PlotFactory.ProcessPlotState == ProcessPlotState.NotPlotting)
-                            {
-                                using (var plotEngine = PlotFactory.CreatePlotEngine())
-                                {
-                                    var ppr = new PlotProgressDialog(false, 1, true);
-                                    using (ppr)
-                                    {
-                                        ppr.IsVisible = false;
-                                        plotEngine.BeginPlot(ppr, null);
-                                        plotEngine.BeginDocument(plotInfo, doc.Name, null, 1, true, tempPath);
-                                        var ppi = new PlotPageInfo();
-                                        plotEngine.BeginPage(ppi, plotInfo, true, null);
-                                        plotEngine.BeginGenerateGraphics(null);
-                                        plotEngine.EndGenerateGraphics(null);
-                                        plotEngine.EndPage(null);
-                                        plotEngine.EndDocument(null);
-                                        plotEngine.EndPlot(null);
-                                    }
-                                    return tempPath;
-                                }
-                            }
-                            else
-                            {
-                                ed.WriteMessage("\nAnother plot is already in progress.");
-                                return null;
-                            }
-                        }
+                        return tempPath;
                     }
                 }
             }
             finally
             {
-                // Clean up: Restore original layers and delete temp layer
                 using (var tr = db.TransactionManager.StartTransaction())
                 {
-                    // Restore original object layers (this is complex, skipping for now, as it requires storing original layer for each object)
-                    // For now, we will just turn the other layers back on and delete our temp layer.
-                    // The objects will remain on the temp layer, which will be purged.
-
                     var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForWrite);
                     foreach (var layerId in layersToRestore)
                     {
@@ -671,9 +636,6 @@ namespace LayerSync.Core
                     if (!tempLayerId.IsNull)
                     {
                         var tempLayer = (LayerTableRecord)tr.GetObject(tempLayerId, OpenMode.ForWrite);
-                        // Erasing the layer will move objects on it to layer 0 if not purged.
-                        // A better approach would be to move them back.
-                        // But for this use case, we assume the user wants the text and not the original geometry.
                         tempLayer.Erase();
                     }
                     tr.Commit();
