@@ -177,6 +177,21 @@ namespace LayerSync.UI.ViewModels
             set { _objectCount = value; OnPropertyChanged(); }
         }
 
+        private double _totalLength;
+        public double TotalLength
+        {
+            get => _totalLength;
+            set
+            {
+                if (_totalLength == value) return;
+                _totalLength = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FormattedLength));
+            }
+        }
+
+        public string FormattedLength => TotalLength > 0 ? TotalLength.ToString("F2") : "—";
+
         /// <summary>
         /// Updates ViewModel properties based on data from AutoCAD.
         /// </summary>

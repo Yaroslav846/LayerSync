@@ -43,11 +43,11 @@ namespace LayerSync.Core
             return layers.OrderBy(l => l.Name).ToList();
         }
 
-        public static Dictionary<string, int> GetObjectCountsForAllLayers()
+        public static Dictionary<string, LayerMetrics> GetLayerMetrics()
         {
-            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var metrics = new Dictionary<string, LayerMetrics>(StringComparer.OrdinalIgnoreCase);
             var doc = Application.DocumentManager.MdiActiveDocument;
-            if (doc == null) return counts;
+            if (doc == null) return metrics;
             var db = doc.Database;
 
             using (var tr = db.TransactionManager.StartTransaction())
@@ -55,38 +55,45 @@ namespace LayerSync.Core
                 var modelSpace = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForRead);
                 foreach (ObjectId objId in modelSpace)
                 {
-                    var entity = tr.GetObject(objId, OpenMode.ForRead) as Entity;
-                    if (entity != null)
+                    if (tr.GetObject(objId, OpenMode.ForRead) is not Entity entity) continue;
+
+                    var layerName = entity.Layer;
+                    if (!metrics.TryGetValue(layerName, out var currentMetrics))
                     {
-                        if (counts.ContainsKey(entity.Layer))
+                        currentMetrics = new LayerMetrics();
+                    }
+
+                    currentMetrics.ObjectCount++;
+
+                    if (entity is Curve curve)
+                    {
+                        try
                         {
-                            counts[entity.Layer]++;
+                            currentMetrics.TotalLength += curve.GetDistanceAtParameter(curve.EndParam);
                         }
-                        else
+                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
                         {
-                            counts[entity.Layer] = 1;
+                            // Ignore curves that don't support length calculation (e.g., rays, xlines)
+                            System.Diagnostics.Debug.WriteLine($"Could not get length for entity {entity.Id}: {ex.Message}");
                         }
                     }
-                }
-                tr.Commit();
-            }
 
-            // Also ensure all layers from the layer table are in the dictionary, even if they have 0 objects.
-            using (var tr = db.TransactionManager.StartTransaction())
-            {
+                    metrics[layerName] = currentMetrics;
+                }
+
                 var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
                 foreach (ObjectId layerId in layerTable)
                 {
                     var layer = (LayerTableRecord)tr.GetObject(layerId, OpenMode.ForRead);
-                    if (!counts.ContainsKey(layer.Name))
+                    if (!metrics.ContainsKey(layer.Name))
                     {
-                        counts.Add(layer.Name, 0);
+                        metrics.Add(layer.Name, new LayerMetrics { ObjectCount = 0, TotalLength = 0 });
                     }
                 }
                 tr.Commit();
             }
 
-            return counts;
+            return metrics;
         }
 
         public static void MoveSelectedObjectsToLayer(string targetLayerName)
