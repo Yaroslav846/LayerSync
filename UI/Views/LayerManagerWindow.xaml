@@ -8,7 +8,8 @@
         mc:Ignorable="d"
         Title="Layer Synchronizer" Height="600" Width="450"
         WindowStartupLocation="CenterScreen"
-        MinHeight="400" MinWidth="350">
+        MinHeight="400" MinWidth="350"
+        ExtendsContentIntoTitleBar="True">
 
     <wpfui:FluentWindow.Resources>
         <ResourceDictionary>
@@ -25,161 +26,164 @@
         <vm:LayerManagerViewModel/>
     </Window.DataContext>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <DockPanel>
+        <wpfui:TitleBar DockPanel.Dock="Top" Title="Layer Synchronizer" />
+        <Grid Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <wpfui:TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Search Layers" Margin="0,0,0,15"/>
+            <wpfui:TextBox Grid.Row="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Search Layers" Margin="0,0,0,15"/>
 
-        <Border Grid.Row="1" Margin="0,0,0,10"
-                BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" CornerRadius="4"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <StackPanel Orientation="Horizontal" Margin="10">
-                <wpfui:TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200" PlaceholderText="New Layer Name"/>
-                <wpfui:Button Content="Create" Command="{Binding CreateLayerCommand}" Appearance="Primary" Margin="5,0"/>
-                <wpfui:Button Content="Cancel" Command="{Binding CancelNewLayerCommand}" Appearance="Secondary"/>
-            </StackPanel>
-        </Border>
+            <Border Grid.Row="1" Margin="0,0,0,10"
+                    BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" CornerRadius="4"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    Visibility="{Binding IsNewLayerModeActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" Margin="10">
+                    <wpfui:TextBox Text="{Binding NewLayerName, UpdateSourceTrigger=PropertyChanged}" Width="200" PlaceholderText="New Layer Name"/>
+                    <wpfui:Button Content="Create" Command="{Binding CreateLayerCommand}" Appearance="Primary" Margin="5,0"/>
+                    <wpfui:Button Content="Cancel" Command="{Binding CancelNewLayerCommand}" Appearance="Secondary"/>
+                </StackPanel>
+            </Border>
 
-        <!-- Layer List -->
-        <ListView Grid.Row="2"
-                  x:Name="LayersListView"
-                  ItemsSource="{Binding Layers}"
-                  SelectedItem="{Binding SelectedLayer}"
-                  SelectionMode="Extended"
-                  SelectionChanged="LayersListView_SelectionChanged"
-                  AlternationCount="2"
-                  BorderThickness="0"
-                  Background="Transparent"
-                  Foreground="{DynamicResource TextFillColorPrimaryBrush}">
-            <ListView.View>
-                <GridView>
-                    <GridView.ColumnHeaderContainerStyle>
-                        <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Padding" Value="5,8"/>
-                        </Style>
-                    </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="Current" Width="60">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <wpfui:SymbolIcon Symbol="Checkmark24"
-                                           Visibility="{Binding IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                           FontSize="16"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="100">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.InputBindings>
-                                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding StartEditCommand}"/>
-                                    </Grid.InputBindings>
-                                    <TextBlock Text="{Binding Name}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <wpfui:TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}">
-                                        <TextBox.InputBindings>
-                                            <KeyBinding Key="Enter" Command="{Binding CommitRenameCommand}" CommandParameter="{Binding Text, ElementName=renameTextBox}"/>
-                                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}"/>
-                                        </TextBox.InputBindings>
-                                        <TextBox.Style>
-                                            <Style TargetType="wpfui:TextBox">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBox.Style>
-                                    </wpfui:TextBox>
-                                </Grid>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Color" Width="50">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <Rectangle Width="25" Height="15"
-                                           Fill="{Binding DisplayBrush}"
-                                           Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                           StrokeThickness="1"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="On" Width="50">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsOn}" HorizontalAlignment="Center" Click="OnCheckBox_Click"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Frozen" Width="60">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsFrozen}" HorizontalAlignment="Center" Click="FrozenCheckBox_Click"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Count" Width="50">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ObjectCount}" HorizontalAlignment="Center"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Length" Width="70">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding FormattedLength}" HorizontalAlignment="Right"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+            <!-- Layer List -->
+            <ListView Grid.Row="2"
+                      x:Name="LayersListView"
+                      ItemsSource="{Binding Layers}"
+                      SelectedItem="{Binding SelectedLayer}"
+                      SelectionMode="Extended"
+                      SelectionChanged="LayersListView_SelectionChanged"
+                      AlternationCount="2"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Padding" Value="5,8"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="Current" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <wpfui:SymbolIcon Symbol="Checkmark24"
+                                               Visibility="{Binding IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                               FontSize="16"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Name" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.InputBindings>
+                                            <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding StartEditCommand}"/>
+                                        </Grid.InputBindings>
+                                        <TextBlock Text="{Binding Name}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <wpfui:TextBox x:Name="renameTextBox" Text="{Binding Name, UpdateSourceTrigger=Explicit}">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding CommitRenameCommand}" CommandParameter="{Binding Text, ElementName=renameTextBox}"/>
+                                                <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}"/>
+                                            </TextBox.InputBindings>
+                                            <TextBox.Style>
+                                                <Style TargetType="wpfui:TextBox">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </wpfui:TextBox>
+                                    </Grid>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Color" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Rectangle Width="25" Height="15"
+                                               Fill="{Binding DisplayBrush}"
+                                               Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                               StrokeThickness="1"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="On" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsOn}" HorizontalAlignment="Center" Click="OnCheckBox_Click"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Frozen" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsFrozen}" HorizontalAlignment="Center" Click="FrozenCheckBox_Click"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Count" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ObjectCount}" HorizontalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Length" Width="70">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding FormattedLength}" HorizontalAlignment="Right"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
 
-        <StatusBar Grid.Row="3">
-            <StatusBarItem>
-                <TextBlock Text="{Binding FormattedTotalSelectedLength}"/>
-            </StatusBarItem>
-        </StatusBar>
+            <StatusBar Grid.Row="3">
+                <StatusBarItem>
+                    <TextBlock Text="{Binding FormattedTotalSelectedLength}"/>
+                </StatusBarItem>
+            </StatusBar>
 
-        <!-- Button Panel -->
-        <ToolBarTray Grid.Row="4" Background="Transparent">
-            <ToolBar>
-                <Button Content="New" Command="{Binding NewLayerCommand}"/>
-                <Button Content="Delete" Command="{Binding DeleteLayersCommand}"/>
-                <Separator/>
-                <Button Content="Set Current" Command="{Binding SetCurrentCommand}"/>
-                <Button Content="Move Selection" Command="{Binding MoveSelectionToLayerCommand}"/>
-                <Separator/>
-                <Button Content="Change Color" Command="{Binding ChangeColorCommand}"/>
-                <Button Content="Select by Color" Command="{Binding SelectByColorCommand}"/>
-                <Separator/>
-                <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
-                <Separator/>
-                <Button Content="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
-            </ToolBar>
-        </ToolBarTray>
-    </Grid>
+            <!-- Button Panel -->
+            <ToolBarTray Grid.Row="4" Background="Transparent">
+                <ToolBar>
+                    <Button Content="New" Command="{Binding NewLayerCommand}"/>
+                    <Button Content="Delete" Command="{Binding DeleteLayersCommand}"/>
+                    <Separator/>
+                    <Button Content="Set Current" Command="{Binding SetCurrentCommand}"/>
+                    <Button Content="Move Selection" Command="{Binding MoveSelectionToLayerCommand}"/>
+                    <Separator/>
+                    <Button Content="Change Color" Command="{Binding ChangeColorCommand}"/>
+                    <Button Content="Select by Color" Command="{Binding SelectByColorCommand}"/>
+                    <Separator/>
+                    <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+                    <Separator/>
+                    <Button Content="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </ToolBar>
+            </ToolBarTray>
+        </Grid>
+    </DockPanel>
 </wpfui:FluentWindow>
