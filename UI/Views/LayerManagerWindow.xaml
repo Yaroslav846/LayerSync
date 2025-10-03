@@ -158,22 +158,28 @@
             </ListView.View>
         </ListView>
 
-        <wpfui:StatusBar Grid.Row="3">
-            <wpfui:StatusBarItem>
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
                 <TextBlock Text="{Binding FormattedTotalSelectedLength}"/>
-            </wpfui:StatusBarItem>
-        </wpfui:StatusBar>
+            </StatusBarItem>
+        </StatusBar>
 
         <!-- Button Panel -->
-        <wpfui:ActionBar Grid.Row="4" >
-            <wpfui:ActionBarItem Label="New" Command="{Binding NewLayerCommand}" Icon="Add24"/>
-            <wpfui:ActionBarItem Label="Delete" Command="{Binding DeleteLayersCommand}" Icon="Delete24"/>
-            <wpfui:ActionBarItem Label="Set Current" Command="{Binding SetCurrentCommand}" Icon="Checkmark24"/>
-            <wpfui:ActionBarItem Label="Move Selection" Command="{Binding MoveSelectionToLayerCommand}" Icon="ArrowRight24"/>
-            <wpfui:ActionBarItem Label="Change Color" Command="{Binding ChangeColorCommand}" Icon="Color24"/>
-            <wpfui:ActionBarItem Label="Select by Color" Command="{Binding SelectByColorCommand}" Icon="ColorLine24"/>
-            <wpfui:ActionBarItem Label="Refresh" Command="{Binding RefreshCommand}" Icon="ArrowClockwise24"/>
-            <wpfui:ActionBarItem Label="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" Icon="WeatherSunny24"/>
-        </wpfui:ActionBar>
+        <ToolBarTray Grid.Row="4" Background="Transparent">
+            <ToolBar>
+                <Button Content="New" Command="{Binding NewLayerCommand}"/>
+                <Button Content="Delete" Command="{Binding DeleteLayersCommand}"/>
+                <Separator/>
+                <Button Content="Set Current" Command="{Binding SetCurrentCommand}"/>
+                <Button Content="Move Selection" Command="{Binding MoveSelectionToLayerCommand}"/>
+                <Separator/>
+                <Button Content="Change Color" Command="{Binding ChangeColorCommand}"/>
+                <Button Content="Select by Color" Command="{Binding SelectByColorCommand}"/>
+                <Separator/>
+                <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+                <Separator/>
+                <Button Content="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </ToolBar>
+        </ToolBarTray>
     </Grid>
 </wpfui:FluentWindow>
