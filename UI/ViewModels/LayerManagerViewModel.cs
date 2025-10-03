@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Forms;
 using LayerSync.Core;
-using LayerSync.UI.Core;
+using Wpf.Ui.Appearance;
 using Autodesk.AutoCAD.Windows;
 using AcadApp = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
@@ -119,10 +119,9 @@ namespace LayerSync.UI.ViewModels
 
         private void ExecuteToggleTheme(object parameter)
         {
-            if (parameter is System.Windows.Window window)
-            {
-                ThemeManager.ToggleTheme(window);
-            }
+            var currentTheme = Theme.GetAppTheme();
+            var newTheme = currentTheme == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
+            Theme.Apply(newTheme);
         }
 
         private void ExecuteSelectByColor(object obj)

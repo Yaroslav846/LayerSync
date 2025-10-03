@@ -1,12 +1,13 @@
-﻿using LayerSync.UI.ViewModels;
+using LayerSync.UI.ViewModels;
 using System.Windows;
+using Wpf.Ui.Controls;
 
 namespace LayerSync.UI.Views
 {
     /// <summary>
     /// Interaction logic for LayerManagerWindow.xaml
     /// </summary>
-    public partial class LayerManagerWindow : Window
+    public partial class LayerManagerWindow : FluentWindow
     {
         public LayerManagerWindow()
         {
@@ -50,4 +51,3 @@ namespace LayerSync.UI.Views
         }
     }
 }
-
