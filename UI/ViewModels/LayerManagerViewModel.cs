@@ -119,9 +119,9 @@ namespace LayerSync.UI.ViewModels
 
         private void ExecuteToggleTheme(object parameter)
         {
-            var currentTheme = Theme.GetAppTheme();
+            var currentTheme = ApplicationThemeManager.GetAppTheme();
             var newTheme = currentTheme == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
-            Theme.Apply(newTheme);
+            ApplicationThemeManager.Apply(newTheme);
         }
 
         private void ExecuteSelectByColor(object obj)
