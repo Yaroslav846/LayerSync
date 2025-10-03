@@ -21,6 +21,7 @@ namespace LayerSync.UI.ViewModels
         private LayerItemViewModel _selectedLayer;
         private string _searchText = "";
         private List<LayerItemViewModel> _allLayers;
+        private string _formattedTotalSelectedLength;
 
 
         public ObservableCollection<LayerItemViewModel> Layers
@@ -48,13 +49,19 @@ namespace LayerSync.UI.ViewModels
                 _selectedLayer = value;
                 OnPropertyChanged();
 
-                // --- ВОТ ИЗМЕНЕНИЕ: Включаем подсветку объектов ---
                 AcadService.HighlightEntitiesOnLayer(_selectedLayer?.Name);
+                UpdateTotalSelectedLength(); // Update length on single selection
 
                 ((RelayCommand)SetCurrentCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)ChangeColorCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)SelectByColorCommand)?.RaiseCanExecuteChanged();
             }
+        }
+
+        public string FormattedTotalSelectedLength
+        {
+            get => _formattedTotalSelectedLength;
+            set { _formattedTotalSelectedLength = value; OnPropertyChanged(); }
         }
 
         public ICommand SetCurrentCommand { get; }
@@ -144,11 +151,22 @@ namespace LayerSync.UI.ViewModels
         public void UpdateSelection(System.Collections.IList selectedItems)
         {
             SelectedItems.Clear();
-            foreach (LayerItemViewModel item in selectedItems)
+            if (selectedItems != null)
             {
-                SelectedItems.Add(item);
+                foreach (LayerItemViewModel item in selectedItems)
+                {
+                    SelectedItems.Add(item);
+                }
             }
+
             (DeleteLayersCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            UpdateTotalSelectedLength(); // Update length on multi-selection
+        }
+
+        private void UpdateTotalSelectedLength()
+        {
+            var totalLength = SelectedItems.Sum(i => i.TotalLength);
+            FormattedTotalSelectedLength = $"Selected length: {totalLength:F2}";
         }
 
         private void ExecuteCreateLayer(object obj)
@@ -216,23 +234,25 @@ namespace LayerSync.UI.ViewModels
         }
 
         /// <summary>
-        /// Loads or reloads the list of layers.
+        /// Loads or reloads the list of layers, including their metrics like object count and total length.
         /// </summary>
         private void LoadLayers()
         {
             var layers = AcadService.GetAllLayers();
-            var counts = AcadService.GetObjectCountsForAllLayers();
+            var metrics = AcadService.GetLayerMetrics();
 
             foreach (var layer in layers)
             {
-                if (counts.TryGetValue(layer.Name, out int count))
+                if (metrics.TryGetValue(layer.Name, out var layerMetrics))
                 {
-                    layer.ObjectCount = count;
+                    layer.ObjectCount = layerMetrics.ObjectCount;
+                    layer.TotalLength = layerMetrics.TotalLength;
                 }
             }
 
             _allLayers = layers;
-            FilterLayers();
+            FilterLayers(); // Refresh the visible layer list
+            UpdateTotalSelectedLength(); // Recalculate total length for current selection
         }
 
         private void OnAcadLayerChanged(object sender, string layerName)

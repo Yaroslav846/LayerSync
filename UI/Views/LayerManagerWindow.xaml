@@ -18,14 +18,17 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <!-- The ViewModel is created and set in the code-behind (LayerManagerWindow.xaml.cs).
-         This avoids instantiating the ViewModel in XAML, which can cause issues in the
-         Visual Studio designer, as the ViewModel may depend on a running AutoCAD instance. -->
+    <!-- ViewModel is created in code-behind, we only specify the data type here -->
+    <Window.DataContext>
+        <vm:LayerManagerViewModel/>
+    </Window.DataContext>
+
     <Grid Margin="15" Background="{DynamicResource BackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -74,9 +77,9 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <!-- Using a TextBlock for indication, as IsCurrent is managed by a command -->
-                                <TextBlock Text=" ✓" 
+                                <TextBlock Text=" ✓"
                                            Visibility="{Binding IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                           HorizontalAlignment="Center" 
+                                           HorizontalAlignment="Center"
                                            FontWeight="Bold"
                                            Foreground="{DynamicResource AccentBrush}"/>
                             </DataTemplate>
@@ -124,8 +127,8 @@
                     <GridViewColumn Header="Color" Width="50">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <Rectangle Width="25" Height="15" 
-                                           Fill="{Binding DisplayBrush}" 
+                                <Rectangle Width="25" Height="15"
+                                           Fill="{Binding DisplayBrush}"
                                            Stroke="{DynamicResource BorderBrush}"
                                            StrokeThickness="1"/>
                             </DataTemplate>
@@ -152,12 +155,25 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+                    <GridViewColumn Header="Length" Width="70">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding FormattedLength}" HorizontalAlignment="Right"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
 
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock Text="{Binding FormattedTotalSelectedLength}"/>
+            </StatusBarItem>
+        </StatusBar>
+
         <!-- Button Panel -->
-        <ToolBarTray Grid.Row="3" Background="Transparent">
+        <ToolBarTray Grid.Row="4" Background="Transparent">
             <ToolBar>
                 <Button Content="New" Command="{Binding NewLayerCommand}" Tag="+"/>
                 <Button Content="Delete" Command="{Binding DeleteLayersCommand}" Tag="🗑️"/>
