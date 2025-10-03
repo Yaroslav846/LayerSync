@@ -1,5 +1,6 @@
 using LayerSync.UI.ViewModels;
 using System.Windows;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace LayerSync.UI.Views
@@ -12,6 +13,7 @@ namespace LayerSync.UI.Views
         public LayerManagerWindow()
         {
             InitializeComponent();
+            ApplicationThemeManager.Apply(this);
 
             // Create the ViewModel instance
             var viewModel = new LayerManagerViewModel();
@@ -34,18 +36,18 @@ namespace LayerSync.UI.Views
 
         private void FrozenCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.CheckBox checkBox && this.DataContext is LayerManagerViewModel viewModel && checkBox.DataContext is LayerItemViewModel clickedItem)
+            if (sender is ToggleSwitch toggleSwitch && this.DataContext is LayerManagerViewModel viewModel && toggleSwitch.DataContext is LayerItemViewModel clickedItem)
             {
-                bool newState = checkBox.IsChecked ?? false;
+                bool newState = toggleSwitch.IsChecked ?? false;
                 viewModel.SetFrozenStateForSelection(clickedItem, newState);
             }
         }
 
         private void OnCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.CheckBox checkBox && this.DataContext is LayerManagerViewModel viewModel && checkBox.DataContext is LayerItemViewModel clickedItem)
+            if (sender is ToggleSwitch toggleSwitch && this.DataContext is LayerManagerViewModel viewModel && toggleSwitch.DataContext is LayerItemViewModel clickedItem)
             {
-                bool newState = checkBox.IsChecked ?? false;
+                bool newState = toggleSwitch.IsChecked ?? false;
                 viewModel.SetOnStateForSelection(clickedItem, newState);
             }
         }
