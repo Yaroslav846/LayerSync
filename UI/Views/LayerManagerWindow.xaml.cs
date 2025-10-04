@@ -1,5 +1,6 @@
 using LayerSync.UI.ViewModels;
 using System.Windows;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace LayerSync.UI.Views
@@ -11,6 +12,8 @@ namespace LayerSync.UI.Views
     {
         public LayerManagerWindow()
         {
+            ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+
             InitializeComponent();
 
             // Create the ViewModel instance
