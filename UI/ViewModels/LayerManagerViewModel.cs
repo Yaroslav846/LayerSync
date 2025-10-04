@@ -122,6 +122,11 @@ namespace LayerSync.UI.ViewModels
             var currentTheme = ApplicationThemeManager.GetAppTheme();
             var newTheme = currentTheme == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
             ApplicationThemeManager.Apply(newTheme);
+
+            if (parameter is Window window)
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(window);
+            }
         }
 
         private void ExecuteSelectByColor(object obj)
