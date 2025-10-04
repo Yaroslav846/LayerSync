@@ -123,7 +123,7 @@ namespace LayerSync.UI.ViewModels
             var newTheme = currentTheme == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
             ApplicationThemeManager.Apply(newTheme);
 
-            if (parameter is Window window)
+            if (parameter is System.Windows.Window window)
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(window);
             }
