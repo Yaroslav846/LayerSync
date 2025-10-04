@@ -172,7 +172,7 @@
                 <wpfui:ActionBarItem Label="Change Color" Command="{Binding ChangeColorCommand}" Icon="{wpfui:SymbolIcon Color24}" />
                 <wpfui:ActionBarItem Label="Select by Color" Command="{Binding SelectByColorCommand}" Icon="{wpfui:SymbolIcon ColorLine24}" />
                 <wpfui:ActionBarItem Label="Refresh" Command="{Binding RefreshCommand}" Icon="{wpfui:SymbolIcon ArrowClockwise24}" />
-                <wpfui:ActionBarItem Label="Toggle Theme" Command="{Binding ToggleThemeCommand}" Icon="{wpfui:SymbolIcon WeatherSunny24}" />
+                <wpfui:ActionBarItem Label="Toggle Theme" Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=wpfui:FluentWindow}}" Icon="{wpfui:SymbolIcon WeatherSunny24}" />
             </wpfui:ActionBar>
         </Grid>
     </DockPanel>
